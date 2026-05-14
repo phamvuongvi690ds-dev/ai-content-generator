@@ -1,0 +1,35 @@
+{
+  "name": "ai-content-generator",
+  "version": "1.0.0",
+  "description": "Desktop tool tạo và viết lại nội dung bằng Vertex/Gemini/chatbot API",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^39.2.4",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.local.aicontentgenerator",
+    "productName": "AI Content Generator",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  }
+}

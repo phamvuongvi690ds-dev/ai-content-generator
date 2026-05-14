@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>AI Content Generator</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --accent: #3b82f6; --border: #334155; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; }
+    
+    .tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); }
+    .tab { padding: 15px 25px; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; font-weight: 500; }
+    .tab:hover { background: #2d3a4f; }
+    .tab.active { border-bottom-color: var(--accent); color: var(--accent); }
+    
+    .content-area { flex: 1; padding: 20px; overflow-y: auto; }
+    .tab-content { display: none; max-width: 900px; margin: 0 auto; }
+    .tab-content.active { display: block; }
+    
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-size: 14px; color: #94a3b8; }
+    input, textarea, select { width: 100%; background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 10px; color: white; box-sizing: border-box; font-size: 14px; }
+    textarea { resize: vertical; min-height: 80px; }
+    button { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    button:hover { filter: brightness(1.1); }
+    button.secondary { background: #475569; margin-left: 10px; }
+    
+    .bot-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border); }
+    .bot-name { font-weight: bold; }
+    .output-box { background: #020617; border: 1px solid var(--accent); padding: 15px; border-radius: 8px; white-space: pre-wrap; margin-top: 15px; min-height: 100px; }
+    .range-group { display: flex; gap: 10px; align-items: center; }
+    .range-group input { width: 100px; }
+  </style>
+</head>
+<body>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab(1)">Tab 1: Cấu hình</div>
+  <div class="tab" onclick="showTab(2)">Tab 2: Sáng tạo</div>
+  <div class="tab" onclick="showTab(3)">Tab 3: Viết lại</div>
+</div>
+
+<div class="content-area">
+  <!-- TAB 1 -->
+  <div id="tab1" class="tab-content active">
+    <div class="card">
+      <h3>Cài đặt Chung</h3>
+      <div class="form-group">
+        <label>Vertex API Base URL (Cố định)</label>
+        <input type="text" id="baseUrl" placeholder="https://answers-name-theology-ruling.trycloudflare.com">
+      </div>
+      <div class="form-group">
+        <label>API Key (Cố định)</label>
+        <input type="password" id="apiKey" placeholder="Nhập API Key">
+      </div>
+      <button onclick="saveGlobalConfig()">Lưu cấu hình chung</button>
+    </div>
+
+    <div class="card">
+      <h3>Thêm Chatbot</h3>
+      <div class="form-group">
+        <label>Tên Bot (Gợi nhớ)</label>
+        <input type="text" id="botName" placeholder="Ví dụ: Copywriter chuyên nghiệp">
+      </div>
+      <div class="form-group">
+        <label>Model ID</label>
+        <input type="text" id="botModel" placeholder="gemini-2.5-flash">
+      </div>
+      <div class="form-group">
+        <label>System Instruction (Chỉ dẫn của Gemini)</label>
+        <textarea id="systemInstruction" placeholder="Ví dụ: Bạn là một chuyên gia viết nội dung marketing chuẩn SEO..."></textarea>
+      </div>
+      <button onclick="addBot()">Lưu Chatbot</button>
+    </div>
+
+    <div class="card">
+      <h3>Danh sách Chatbot</h3>
+      <div id="botList"></div>
+    </div>
+  </div>
+
+  <!-- TAB 2 -->
+  <div id="tab2" class="tab-content">
+    <div class="card">
+      <h3>Sáng tạo nội dung mới</h3>
+      <div class="form-group">
+        <label>Chọn Chatbot</label>
+        <select id="selectBotTab2"></select>
+      </div>
+      <div class="form-group">
+        <label>Độ dài nội dung (Ký tự)</label>
+        <div class="range-group">
+          Từ <input type="number" id="minChars" value="500"> 
+          đến <input type="number" id="maxChars" value="1000">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tiêu đề / Chủ đề</label>
+        <input type="text" id="topic" placeholder="Nhập tiêu đề hoặc chủ đề cần viết">
+      </div>
+      <div class="form-group">
+        <label>Yêu cầu cụ thể</label>
+        <textarea id="requirements" placeholder="Nhập yêu cầu chi tiết (văn phong, đối tượng...)"></textarea>
+      </div>
+      <button id="generateBtn" onclick="generateContent()">Bắt đầu sáng tạo</button>
+      <div id="outputTab2" class="output-box">Kết quả sẽ hiện ở đây...</div>
+    </div>
+  </div>
+
+  <!-- TAB 3 -->
+  <div id="tab3" class="tab-content">
+    <div class="card">
+      <h3>Viết lại nội dung</h3>
+      <div class="form-group">
+        <label>Chọn Chatbot</label>
+        <select id="selectBotTab3"></select>
+      </div>
+      <div class="form-group">
+        <label>Nội dung gốc (Tải lên hoặc dán vào)</label>
+        <textarea id="originalContent" style="min-height: 150px;" placeholder="Dán nội dung cần viết lại vào đây..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Yêu cầu viết lại</label>
+        <textarea id="rewriteRequirements" placeholder="Ví dụ: Viết lại theo phong cách hài hước, hoặc viết ngắn gọn lại..."></textarea>
+      </div>
+      <button id="rewriteBtn" onclick="rewriteContent()">Bắt đầu viết lại</button>
+      <div id="outputTab3" class="output-box">Nội dung mới sẽ hiện ở đây...</div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
