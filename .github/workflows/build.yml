@@ -1,0 +1,28 @@
+name: Build Desktop Apps
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build:win
+        if: runner.os == 'Windows'
+      - run: npm run build:mac
+        if: runner.os == 'macOS'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AI-Content-Generator-${{ runner.os }}
+          path: dist/*
