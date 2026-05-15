@@ -22,7 +22,7 @@ ipcMain.handle('get-config', () => {
   if (fs.existsSync(configPath)) {
     return JSON.parse(fs.readFileSync(configPath, 'utf8'));
   }
-  return { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', serviceAccountPath: '', openaiBaseUrl: 'https://api.openai.com' };
+  return { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', apiKeys: [], keyIndex: {}, serviceAccountPath: '', geminiBaseUrl: 'https://generativelanguage.googleapis.com', openaiBaseUrl: 'https://api.openai.com' };
 });
 
 ipcMain.handle('save-config', (event, config) => {
@@ -41,13 +41,21 @@ async function getVertexToken(keyPath) {
 }
 
 ipcMain.handle('call-api', async (event, { bot, prompt, config }) => {
-  const { apiType, baseUrl, apiKey, serviceAccountPath, openaiBaseUrl } = config;
+  let { apiType, baseUrl, apiKey, apiKeys, keyIndex, serviceAccountPath, geminiBaseUrl, openaiBaseUrl } = config;
+    const keys = Array.isArray(apiKeys) && apiKeys.length ? apiKeys : (apiKey ? [apiKey] : []);
+    if (keys.length) {
+      const idx = (keyIndex?.[apiType] || 0) % keys.length;
+      apiKey = keys[idx];
+      config.keyIndex = keyIndex || {};
+      config.keyIndex[apiType] = (idx + 1) % keys.length;
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    }
   
   try {
     let url, headers, body;
     
     if (apiType === 'gemini') {
-      url = `https://generativelanguage.googleapis.com/v1beta/models/${bot.model}:generateContent?key=${apiKey}`;
+      url = `${(geminiBaseUrl || 'https://generativelanguage.googleapis.com').replace(/\/$/, '')}/v1beta/models/${bot.model}:generateContent?key=${apiKey}`;
       headers = { 'Content-Type': 'application/json' };
     } 
     else if (apiType === 'gateway') {

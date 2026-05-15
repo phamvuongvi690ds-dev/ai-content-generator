@@ -55,15 +55,23 @@
           <input type="text" id="baseUrl" placeholder="https://answers-name-theology-ruling.trycloudflare.com">
         </div>
         <div class="form-group">
-          <label>Gateway API Key</label>
-          <input type="password" id="apiKeyGateway" placeholder="Nhập API Key Gateway">
+          <label>Gateway API Keys — mỗi dòng 1 key, tự xoay vòng mỗi lượt gọi</label>
+          <textarea id="apiKeysGateway" placeholder="key_1
+key_2
+key_3"></textarea>
         </div>
       </div>
 
       <div id="groupGemini" style="display:none">
         <div class="form-group">
-          <label>Gemini API Key (Google AI Studio)</label>
-          <input type="password" id="apiKeyGemini" placeholder="Nhập Gemini API Key">
+          <label>Gemini Base URL</label>
+          <input type="text" id="geminiBaseUrl" placeholder="https://generativelanguage.googleapis.com">
+        </div>
+        <div class="form-group">
+          <label>Gemini API Keys — mỗi dòng 1 key, tự xoay vòng mỗi lượt gọi</label>
+          <textarea id="apiKeysGemini" placeholder="AIza...
+AIza...
+AIza..."></textarea>
         </div>
       </div>
 
@@ -83,8 +91,10 @@
           <input type="text" id="openaiBaseUrl" placeholder="https://api.openai.com">
         </div>
         <div class="form-group">
-          <label>OpenAI / ChatGPT API Key</label>
-          <input type="password" id="apiKeyOpenAI" placeholder="sk-...">
+          <label>OpenAI / ChatGPT API Keys — mỗi dòng 1 key, tự xoay vòng mỗi lượt gọi</label>
+          <textarea id="apiKeysOpenAI" placeholder="sk-...
+sk-...
+sk-..."></textarea>
         </div>
       </div>
       

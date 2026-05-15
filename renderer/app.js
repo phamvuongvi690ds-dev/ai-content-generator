@@ -1,14 +1,16 @@
-let config = { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', serviceAccountPath: '', openaiBaseUrl: 'https://api.openai.com' };
+let config = { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', apiKeys: [], keyIndex: {}, serviceAccountPath: '', geminiBaseUrl: 'https://generativelanguage.googleapis.com', openaiBaseUrl: 'https://api.openai.com' };
 
 window.onload = async () => {
   config = await window.api.getConfig();
   document.querySelector(`input[name="apiType"][value="${config.apiType || 'gateway'}"]`).checked = true;
   document.getElementById('baseUrl').value = config.baseUrl || 'https://answers-name-theology-ruling.trycloudflare.com';
-  document.getElementById('apiKeyGateway').value = config.apiType === 'gateway' ? (config.apiKey || '') : '';
-  document.getElementById('apiKeyGemini').value = config.apiType === 'gemini' ? (config.apiKey || '') : '';
+  const keysText = (config.apiKeys && config.apiKeys.length ? config.apiKeys : (config.apiKey ? [config.apiKey] : [])).join('\n');
+  document.getElementById('apiKeysGateway').value = config.apiType === 'gateway' ? keysText : '';
+  document.getElementById('geminiBaseUrl').value = config.geminiBaseUrl || 'https://generativelanguage.googleapis.com';
+  document.getElementById('apiKeysGemini').value = config.apiType === 'gemini' ? keysText : '';
   document.getElementById('serviceAccountPath').value = config.serviceAccountPath || '';
   document.getElementById('openaiBaseUrl').value = config.openaiBaseUrl || 'https://api.openai.com';
-  document.getElementById('apiKeyOpenAI').value = config.apiType === 'openai' ? (config.apiKey || '') : '';
+  document.getElementById('apiKeysOpenAI').value = config.apiType === 'openai' ? keysText : '';
   toggleApiInputs();
   renderBots();
 };
@@ -37,8 +39,11 @@ async function saveGlobalConfig() {
   const type = document.querySelector('input[name="apiType"]:checked').value;
   config.apiType = type;
   config.baseUrl = document.getElementById('baseUrl').value.trim();
-  config.apiKey = type === 'gemini' ? document.getElementById('apiKeyGemini').value.trim() : (type === 'openai' ? document.getElementById('apiKeyOpenAI').value.trim() : document.getElementById('apiKeyGateway').value.trim());
+  const keyBox = type === 'gemini' ? 'apiKeysGemini' : (type === 'openai' ? 'apiKeysOpenAI' : 'apiKeysGateway');
+  config.apiKeys = document.getElementById(keyBox)?.value.split(/\n+/).map(k => k.trim()).filter(Boolean) || [];
+  config.apiKey = config.apiKeys[0] || '';
   config.serviceAccountPath = document.getElementById('serviceAccountPath').value.trim();
+  config.geminiBaseUrl = document.getElementById('geminiBaseUrl').value.trim() || 'https://generativelanguage.googleapis.com';
   config.openaiBaseUrl = document.getElementById('openaiBaseUrl').value.trim() || 'https://api.openai.com';
   await window.api.saveConfig(config);
   alert('Đã lưu cấu hình API.');
