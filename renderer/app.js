@@ -1,4 +1,4 @@
-let config = { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', serviceAccountPath: '' };
+let config = { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', serviceAccountPath: '', openaiBaseUrl: 'https://api.openai.com' };
 
 window.onload = async () => {
   config = await window.api.getConfig();
@@ -7,6 +7,8 @@ window.onload = async () => {
   document.getElementById('apiKeyGateway').value = config.apiType === 'gateway' ? (config.apiKey || '') : '';
   document.getElementById('apiKeyGemini').value = config.apiType === 'gemini' ? (config.apiKey || '') : '';
   document.getElementById('serviceAccountPath').value = config.serviceAccountPath || '';
+  document.getElementById('openaiBaseUrl').value = config.openaiBaseUrl || 'https://api.openai.com';
+  document.getElementById('apiKeyOpenAI').value = config.apiType === 'openai' ? (config.apiKey || '') : '';
   toggleApiInputs();
   renderBots();
 };
@@ -23,6 +25,7 @@ function toggleApiInputs() {
   document.getElementById('groupGateway').style.display = type === 'gateway' ? 'block' : 'none';
   document.getElementById('groupGemini').style.display = type === 'gemini' ? 'block' : 'none';
   document.getElementById('groupVertex').style.display = type === 'vertex' ? 'block' : 'none';
+  document.getElementById('groupOpenAI').style.display = type === 'openai' ? 'block' : 'none';
 }
 
 async function pickServiceAccount() {
@@ -34,8 +37,9 @@ async function saveGlobalConfig() {
   const type = document.querySelector('input[name="apiType"]:checked').value;
   config.apiType = type;
   config.baseUrl = document.getElementById('baseUrl').value.trim();
-  config.apiKey = type === 'gemini' ? document.getElementById('apiKeyGemini').value.trim() : document.getElementById('apiKeyGateway').value.trim();
+  config.apiKey = type === 'gemini' ? document.getElementById('apiKeyGemini').value.trim() : (type === 'openai' ? document.getElementById('apiKeyOpenAI').value.trim() : document.getElementById('apiKeyGateway').value.trim());
   config.serviceAccountPath = document.getElementById('serviceAccountPath').value.trim();
+  config.openaiBaseUrl = document.getElementById('openaiBaseUrl').value.trim() || 'https://api.openai.com';
   await window.api.saveConfig(config);
   alert('Đã lưu cấu hình API.');
 }
@@ -92,7 +96,7 @@ function renderBots() {
 }
 
 function getSelectedBot(selectId) { return config.bots[Number(document.getElementById(selectId).value)]; }
-function extractText(data) { return data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || JSON.stringify(data, null, 2); }
+function extractText(data) { return data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || JSON.stringify(data, null, 2); }
 
 async function generateContent() {
   await saveGlobalConfig();

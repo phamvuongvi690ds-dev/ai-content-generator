@@ -22,7 +22,7 @@ ipcMain.handle('get-config', () => {
   if (fs.existsSync(configPath)) {
     return JSON.parse(fs.readFileSync(configPath, 'utf8'));
   }
-  return { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', serviceAccountPath: '' };
+  return { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', serviceAccountPath: '', openaiBaseUrl: 'https://api.openai.com' };
 });
 
 ipcMain.handle('save-config', (event, config) => {
@@ -41,7 +41,7 @@ async function getVertexToken(keyPath) {
 }
 
 ipcMain.handle('call-api', async (event, { bot, prompt, config }) => {
-  const { apiType, baseUrl, apiKey, serviceAccountPath } = config;
+  const { apiType, baseUrl, apiKey, serviceAccountPath, openaiBaseUrl } = config;
   
   try {
     let url, headers, body;
@@ -56,7 +56,6 @@ ipcMain.handle('call-api', async (event, { bot, prompt, config }) => {
     } 
     else if (apiType === 'vertex') {
       const token = await getVertexToken(serviceAccountPath);
-      const projectMatch = serviceAccountPath.match(/project_id": "(.*?)"/); // Simple fallback if not parsed
       let projectId = "";
       if (fs.existsSync(serviceAccountPath)) {
           const keyData = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
@@ -67,6 +66,23 @@ ipcMain.handle('call-api', async (event, { bot, prompt, config }) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       };
+    }
+    else if (apiType === 'openai') {
+      url = `${(openaiBaseUrl || 'https://api.openai.com').replace(/\/$/, '')}/v1/chat/completions`;
+      headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
+      body = JSON.stringify({
+        model: bot.model || 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: bot.systemInstruction || '' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.8
+      });
+      const response = await fetch(url, { method: 'POST', headers, body });
+      return await response.json();
     }
 
     body = JSON.stringify({

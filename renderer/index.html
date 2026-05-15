@@ -46,6 +46,7 @@
         <label><input type="radio" name="apiType" value="gateway" checked onchange="toggleApiInputs()"> Vertex Gateway</label>
         <label><input type="radio" name="apiType" value="gemini" onchange="toggleApiInputs()"> Gemini API Direct</label>
         <label><input type="radio" name="apiType" value="vertex" onchange="toggleApiInputs()"> Vertex AI (OAuth)</label>
+        <label><input type="radio" name="apiType" value="openai" onchange="toggleApiInputs()"> ChatGPT / OpenAI</label>
       </div>
 
       <div id="groupGateway">
@@ -73,6 +74,17 @@
             <input type="text" id="serviceAccountPath" readonly placeholder="Chọn file JSON từ Google Cloud">
             <button onclick="pickServiceAccount()" class="secondary" style="white-space:nowrap">Chọn File</button>
           </div>
+        </div>
+      </div>
+
+      <div id="groupOpenAI" style="display:none">
+        <div class="form-group">
+          <label>OpenAI Base URL</label>
+          <input type="text" id="openaiBaseUrl" placeholder="https://api.openai.com">
+        </div>
+        <div class="form-group">
+          <label>OpenAI / ChatGPT API Key</label>
+          <input type="password" id="apiKeyOpenAI" placeholder="sk-...">
         </div>
       </div>
       
