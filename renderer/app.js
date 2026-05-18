@@ -1,4 +1,5 @@
-let config = { bots: [], apiType: 'gateway', outputLanguage: 'en', baseUrl: '', apiKey: '', apiKeys: [], keyIndex: {}, serviceAccountPath: '', geminiBaseUrl: 'https://generativelanguage.googleapis.com', openaiBaseUrl: 'https://api.openai.com' };
+let config = { bots: [] };
+let editingIndex = -1;
 
 const MODEL_OPTIONS = {
   gateway: [
@@ -30,8 +31,28 @@ const MODEL_OPTIONS = {
   ]
 };
 
+window.onload = async () => {
+  config = await window.api.getConfig();
+  // Migrate old global config into defaults if needed
+  config.bots = config.bots || [];
+  toggleBotApiInputs();
+  updateModelOptions();
+  renderBots();
+};
+
+function showTab(n) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.tab:nth-child(${n})`).classList.add('active');
+  document.getElementById(`tab${n}`).classList.add('active');
+}
+
+function currentBotApiType() {
+  return document.querySelector('input[name="botApiType"]:checked')?.value || 'gateway';
+}
+
 function updateModelOptions(selectedValue = '') {
-  const type = document.querySelector('input[name="apiType"]:checked')?.value || 'gateway';
+  const type = currentBotApiType();
   const select = document.getElementById('botModel');
   if (!select) return;
   const options = MODEL_OPTIONS[type] || MODEL_OPTIONS.gateway;
@@ -51,74 +72,66 @@ function updateModelOptions(selectedValue = '') {
   select.value = selectedValue || options[0].value;
 }
 
-
-window.onload = async () => {
-  config = await window.api.getConfig();
-  document.querySelector(`input[name="apiType"][value="${config.apiType || 'gateway'}"]`).checked = true;
-  document.getElementById('baseUrl').value = config.baseUrl || 'https://answers-name-theology-ruling.trycloudflare.com';
-  document.getElementById('outputLanguage').value = config.outputLanguage || 'en';
-  const keysText = (config.apiKeys && config.apiKeys.length ? config.apiKeys : (config.apiKey ? [config.apiKey] : [])).join('\n');
-  document.getElementById('apiKeysGateway').value = config.apiType === 'gateway' ? keysText : '';
-  document.getElementById('geminiBaseUrl').value = config.geminiBaseUrl || 'https://generativelanguage.googleapis.com';
-  document.getElementById('apiKeysGemini').value = config.apiType === 'gemini' ? keysText : '';
-  document.getElementById('serviceAccountPath').value = config.serviceAccountPath || '';
-  document.getElementById('openaiBaseUrl').value = config.openaiBaseUrl || 'https://api.openai.com';
-  document.getElementById('apiKeysOpenAI').value = config.apiType === 'openai' ? keysText : '';
-  toggleApiInputs();
-  updateModelOptions();
-  renderBots();
-};
-
-function showTab(n) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.querySelector(`.tab:nth-child(${n})`).classList.add('active');
-  document.getElementById(`tab${n}`).classList.add('active');
-}
-
-function toggleApiInputs() {
-  const type = document.querySelector('input[name="apiType"]:checked').value;
-  document.getElementById('groupGateway').style.display = type === 'gateway' ? 'block' : 'none';
-  document.getElementById('groupGemini').style.display = type === 'gemini' ? 'block' : 'none';
-  document.getElementById('groupVertex').style.display = type === 'vertex' ? 'block' : 'none';
-  document.getElementById('groupOpenAI').style.display = type === 'openai' ? 'block' : 'none';
+function toggleBotApiInputs() {
+  const type = currentBotApiType();
+  document.getElementById('botGatewayGroup').style.display = type === 'gateway' ? 'block' : 'none';
+  document.getElementById('botGeminiGroup').style.display = type === 'gemini' ? 'block' : 'none';
+  document.getElementById('botVertexGroup').style.display = type === 'vertex' ? 'block' : 'none';
+  document.getElementById('botOpenAIGroup').style.display = type === 'openai' ? 'block' : 'none';
   updateModelOptions(document.getElementById('botModel')?.value || '');
 }
 
 async function pickServiceAccount() {
   const file = await window.api.selectFile();
-  if (file) document.getElementById('serviceAccountPath').value = file;
+  if (file) document.getElementById('botServiceAccountPath').value = file;
 }
 
-async function saveGlobalConfig() {
-  const type = document.querySelector('input[name="apiType"]:checked').value;
-  config.apiType = type;
-  config.baseUrl = document.getElementById('baseUrl').value.trim();
-  config.outputLanguage = document.getElementById('outputLanguage').value || 'en';
-  const keyBox = type === 'gemini' ? 'apiKeysGemini' : (type === 'openai' ? 'apiKeysOpenAI' : 'apiKeysGateway');
-  config.apiKeys = document.getElementById(keyBox)?.value.split(/\n+/).map(k => k.trim()).filter(Boolean) || [];
-  config.apiKey = config.apiKeys[0] || '';
-  config.serviceAccountPath = document.getElementById('serviceAccountPath').value.trim();
-  config.geminiBaseUrl = document.getElementById('geminiBaseUrl').value.trim() || 'https://generativelanguage.googleapis.com';
-  config.openaiBaseUrl = document.getElementById('openaiBaseUrl').value.trim() || 'https://api.openai.com';
-  await window.api.saveConfig(config);
-  alert('Đã lưu cấu hình API.');
+function getBotFromForm() {
+  const apiType = currentBotApiType();
+  const keyBox = apiType === 'gemini' ? 'botApiKeysGemini' : (apiType === 'openai' ? 'botApiKeysOpenAI' : 'botApiKeysGateway');
+  return {
+    name: document.getElementById('botName').value.trim(),
+    apiType,
+    outputLanguage: document.getElementById('botOutputLanguage').value || 'en',
+    model: document.getElementById('botModel').value || 'gemini-2.5-flash',
+    systemInstruction: document.getElementById('systemInstruction').value.trim(),
+    baseUrl: document.getElementById('botBaseUrl').value.trim(),
+    geminiBaseUrl: document.getElementById('botGeminiBaseUrl').value.trim() || 'https://generativelanguage.googleapis.com',
+    openaiBaseUrl: document.getElementById('botOpenAIBaseUrl').value.trim() || 'https://api.openai.com',
+    serviceAccountPath: document.getElementById('botServiceAccountPath').value.trim(),
+    apiKeys: (document.getElementById(keyBox)?.value || '').split(/\n+/).map(k => k.trim()).filter(Boolean),
+    keyIndex: 0
+  };
 }
 
 async function addBot() {
-  const name = document.getElementById('botName').value.trim();
-  const model = document.getElementById('botModel').value || 'gemini-2.5-flash';
-  const systemInstruction = document.getElementById('systemInstruction').value.trim();
-  if (!name || !systemInstruction) return alert('Nhập tên bot và system instruction.');
-  const existingIndex = config.bots.findIndex(b => b.name === name);
-  const bot = { name, model, systemInstruction };
-  if (existingIndex >= 0) config.bots[existingIndex] = bot;
-  else config.bots.push(bot);
+  const bot = getBotFromForm();
+  if (!bot.name || !bot.systemInstruction) return alert('Nhập tên bot và system instruction.');
+  if (bot.apiType !== 'vertex' && !bot.apiKeys.length) return alert('Nhập ít nhất 1 API key cho bot này.');
+  if (editingIndex >= 0) config.bots[editingIndex] = bot;
+  else {
+    const existingIndex = config.bots.findIndex(b => b.name === bot.name);
+    if (existingIndex >= 0) config.bots[existingIndex] = bot;
+    else config.bots.push(bot);
+  }
   await window.api.saveConfig(config);
-  document.getElementById('botName').value = '';
-  updateModelOptions();
-  document.getElementById('systemInstruction').value = '';
+  clearBotForm();
   renderBots();
+}
+
+function clearBotForm() {
+  editingIndex = -1;
+  document.getElementById('botName').value = '';
+  document.getElementById('systemInstruction').value = '';
+  document.getElementById('botBaseUrl').value = 'https://fisher-fare-wiley-travelling.trycloudflare.com';
+  document.getElementById('botGeminiBaseUrl').value = 'https://generativelanguage.googleapis.com';
+  document.getElementById('botOpenAIBaseUrl').value = 'https://api.openai.com';
+  document.getElementById('botServiceAccountPath').value = '';
+  document.getElementById('botApiKeysGateway').value = '';
+  document.getElementById('botApiKeysGemini').value = '';
+  document.getElementById('botApiKeysOpenAI').value = '';
+  document.getElementById('saveBotBtn').textContent = 'Lưu Chatbot';
+  updateModelOptions();
 }
 
 async function deleteBot(index) {
@@ -130,58 +143,98 @@ async function deleteBot(index) {
 
 function editBot(index) {
   const bot = config.bots[index];
-  document.getElementById('botName').value = bot.name;
-  updateModelOptions(bot.model);
-  document.getElementById('systemInstruction').value = bot.systemInstruction;
+  editingIndex = index;
+  document.querySelector(`input[name="botApiType"][value="${bot.apiType || 'gateway'}"]`).checked = true;
+  toggleBotApiInputs();
+  document.getElementById('botOutputLanguage').value = bot.outputLanguage || 'en';
+  document.getElementById('botName').value = bot.name || '';
+  updateModelOptions(bot.model || 'gemini-2.5-flash');
+  document.getElementById('systemInstruction').value = bot.systemInstruction || '';
+  document.getElementById('botBaseUrl').value = bot.baseUrl || '';
+  document.getElementById('botGeminiBaseUrl').value = bot.geminiBaseUrl || 'https://generativelanguage.googleapis.com';
+  document.getElementById('botOpenAIBaseUrl').value = bot.openaiBaseUrl || 'https://api.openai.com';
+  document.getElementById('botServiceAccountPath').value = bot.serviceAccountPath || '';
+  const keyText = (bot.apiKeys || []).join('\n');
+  document.getElementById('botApiKeysGateway').value = bot.apiType === 'gateway' ? keyText : '';
+  document.getElementById('botApiKeysGemini').value = bot.apiType === 'gemini' ? keyText : '';
+  document.getElementById('botApiKeysOpenAI').value = bot.apiType === 'openai' ? keyText : '';
+  document.getElementById('saveBotBtn').textContent = 'Cập nhật Chatbot';
   showTab(1);
 }
 
 function renderBots() {
   const list = document.getElementById('botList');
-  const selects = [document.getElementById('selectBotTab2'), document.getElementById('selectBotTab3')];
+  const multi = document.getElementById('multiBotList');
+  const rewriteSelect = document.getElementById('selectBotTab3');
   list.innerHTML = '';
-  selects.forEach(s => s.innerHTML = '');
-  if (!config.bots.length) list.innerHTML = '<p style="color:#94a3b8">Chưa có chatbot nào.</p>';
+  multi.innerHTML = '';
+  rewriteSelect.innerHTML = '';
+
+  if (!config.bots.length) {
+    list.innerHTML = '<p style="color:#94a3b8">Chưa có chatbot nào.</p>';
+    multi.innerHTML = '<p style="color:#94a3b8">Chưa có chatbot nào.</p>';
+    return;
+  }
+
   config.bots.forEach((bot, index) => {
     const div = document.createElement('div');
     div.className = 'bot-item';
-    div.innerHTML = `<div><b>${bot.name}</b><br><small>${bot.model}</small></div><div><button onclick="editBot(${index})" class="secondary">Sửa</button> <button onclick="deleteBot(${index})" style="background:#ef4444">Xóa</button></div>`;
+    div.innerHTML = `<div><b>${bot.name}</b><br><small>${bot.apiType || 'gateway'} · ${bot.model || ''} · ${(bot.apiKeys || []).length || (bot.apiType === 'vertex' ? 'OAuth' : 0)} key</small></div><div><button onclick="editBot(${index})" class="secondary">Sửa</button> <button onclick="deleteBot(${index})" style="background:#ef4444">Xóa</button></div>`;
     list.appendChild(div);
-    selects.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = index;
-      opt.textContent = bot.name;
-      s.appendChild(opt);
-    });
+
+    const label = document.createElement('label');
+    label.className = 'check-item';
+    label.innerHTML = `<input type="checkbox" class="multiBotCheck" value="${index}"> ${bot.name} <small>(${bot.apiType} · ${bot.model})</small>`;
+    multi.appendChild(label);
+
+    const opt = document.createElement('option');
+    opt.value = index;
+    opt.textContent = `${bot.name} (${bot.apiType} · ${bot.model})`;
+    rewriteSelect.appendChild(opt);
   });
 }
 
-function getSelectedBot(selectId) { return config.bots[Number(document.getElementById(selectId).value)]; }
-function extractText(data) { return data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || JSON.stringify(data, null, 2); }
+function selectedBotIndexes() {
+  return Array.from(document.querySelectorAll('.multiBotCheck:checked')).map(i => Number(i.value));
+}
+
+function extractText(data) {
+  return data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || JSON.stringify(data, null, 2);
+}
+
+function languageName(bot) {
+  return bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
+}
 
 async function generateContent() {
-  await saveGlobalConfig();
-  const bot = getSelectedBot('selectBotTab2');
-  if (!bot) return alert('Chưa có chatbot. Hãy tạo ở Tab 1.');
-  const lang = config.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
-  const prompt = `Create new content with these requirements:\nTitle/topic: ${document.getElementById('topic').value.trim()}\nLength: from ${document.getElementById('minChars').value} to ${document.getElementById('maxChars').value} characters.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${lang}.\nReturn only the final content, no explanation.`;
+  const indexes = selectedBotIndexes();
+  if (!indexes.length) return alert('Chọn ít nhất 1 chatbot để chạy.');
+  const topic = document.getElementById('topic').value.trim();
+  if (!topic) return alert('Nhập tiêu đề/chủ đề.');
+
   const out = document.getElementById('outputTab2');
-  out.textContent = 'Đang tạo nội dung...';
-  const data = await window.api.callApi({ bot, prompt, config });
-  out.textContent = extractText(data);
+  out.textContent = 'Đang chạy nhiều chatbot...';
+
+  const tasks = indexes.map(async idx => {
+    const bot = config.bots[idx];
+    const prompt = `Create new content with these requirements:\nTitle/topic: ${topic}\nLength: from ${document.getElementById('minChars').value} to ${document.getElementById('maxChars').value} characters.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation.`;
+    const data = await window.api.callApi({ bot, prompt });
+    return `==============================\nBOT: ${bot.name}\nAPI: ${bot.apiType} · MODEL: ${bot.model}\n==============================\n${extractText(data)}`;
+  });
+
+  const results = await Promise.all(tasks);
+  out.textContent = results.join('\n\n');
 }
 
 async function rewriteContent() {
-  await saveGlobalConfig();
-  const bot = getSelectedBot('selectBotTab3');
+  const bot = config.bots[Number(document.getElementById('selectBotTab3').value)];
   if (!bot) return alert('Chưa có chatbot. Hãy tạo ở Tab 1.');
   const original = document.getElementById('originalContent').value.trim();
   if (!original) return alert('Nhập nội dung gốc.');
-  const lang = config.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
-  const prompt = `Rewrite the content below with these requirements:\nRewrite requirements: ${document.getElementById('rewriteRequirements').value.trim() || 'Rewrite naturally, clearly, better, and keep the original meaning.'}\nOutput language: ${lang}.\n\nOriginal content:\n${original}\n\nReturn only the rewritten content, no explanation.`;
+  const prompt = `Rewrite the content below with these requirements:\nRewrite requirements: ${document.getElementById('rewriteRequirements').value.trim() || 'Rewrite naturally, clearly, better, and keep the original meaning.'}\nOutput language: ${languageName(bot)}.\n\nOriginal content:\n${original}\n\nReturn only the rewritten content, no explanation.`;
   const out = document.getElementById('outputTab3');
   out.textContent = 'Đang viết lại...';
-  const data = await window.api.callApi({ bot, prompt, config });
+  const data = await window.api.callApi({ bot, prompt });
   out.textContent = extractText(data);
 }
 

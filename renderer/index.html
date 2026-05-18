@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>AI Content Generator</title>
+  <title>AI Content Generator Pro</title>
   <style>
     :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --accent: #3b82f6; --border: #334155; }
     body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; }
@@ -11,7 +11,7 @@
     .tab:hover { background: #2d3a4f; }
     .tab.active { border-bottom-color: var(--accent); color: var(--accent); }
     .content-area { flex: 1; padding: 20px; overflow-y: auto; }
-    .tab-content { display: none; max-width: 900px; margin: 0 auto; }
+    .tab-content { display: none; max-width: 1000px; margin: 0 auto; }
     .tab-content.active { display: block; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
     .form-group { margin-bottom: 15px; }
@@ -22,126 +22,129 @@
     button:hover { filter: brightness(1.1); }
     button.secondary { background: #475569; }
     .bot-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border); }
-    .output-box { background: #020617; border: 1px solid var(--accent); padding: 15px; border-radius: 8px; white-space: pre-wrap; margin-top: 15px; min-height: 100px; }
+    .output-box { background: #020617; border: 1px solid var(--accent); padding: 15px; border-radius: 8px; white-space: pre-wrap; margin-top: 15px; min-height: 150px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.5; }
     .range-group { display: flex; gap: 10px; align-items: center; }
     .range-group input { width: 100px; }
-    .api-options { display: flex; gap: 15px; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+    .api-options { display: flex; gap: 15px; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
     .api-options label { display: flex; align-items: center; gap: 5px; cursor: pointer; color: white; margin-bottom: 0; }
     .api-options input { width: auto; }
+    .multi-bot-select { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; max-height: 200px; overflow-y: auto; }
+    .check-item { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+    .check-item input { width: auto; }
   </style>
 </head>
 <body>
 
 <div class="tabs">
-  <div class="tab active" onclick="showTab(1)">Tab 1: Cấu hình</div>
-  <div class="tab" onclick="showTab(2)">Tab 2: Sáng tạo</div>
+  <div class="tab active" onclick="showTab(1)">Tab 1: Quản lý Chatbot</div>
+  <div class="tab" onclick="showTab(2)">Tab 2: Sáng tạo đa Bot</div>
   <div class="tab" onclick="showTab(3)">Tab 3: Viết lại</div>
 </div>
 
 <div class="content-area">
+  <!-- TAB 1: Quản lý Chatbot -->
   <div id="tab1" class="tab-content active">
     <div class="card">
-      <h3>Loại API Sử Dụng</h3>
-      <div class="api-options">
-        <label><input type="radio" name="apiType" value="gateway" checked onchange="toggleApiInputs()"> Vertex Gateway</label>
-        <label><input type="radio" name="apiType" value="gemini" onchange="toggleApiInputs()"> Gemini API Direct</label>
-        <label><input type="radio" name="apiType" value="vertex" onchange="toggleApiInputs()"> Vertex AI (OAuth)</label>
-        <label><input type="radio" name="apiType" value="openai" onchange="toggleApiInputs()"> ChatGPT / OpenAI</label>
+      <h3>Thiết lập Chatbot Mới</h3>
+      
+      <div class="form-group">
+        <label>Tên Gợi Nhớ của Chatbot</label>
+        <input type="text" id="botName" placeholder="Ví dụ: Bot SEO, Bot Kịch Bản...">
       </div>
 
       <div class="form-group">
-        <label>Ngôn ngữ prompt / nội dung xuất ra</label>
-        <select id="outputLanguage">
-          <option value="en">English</option>
-          <option value="vi">Tiếng Việt</option>
-        </select>
+        <label>Loại API cho Bot này</label>
+        <div class="api-options">
+          <label><input type="radio" name="botApiType" value="gateway" checked onchange="toggleBotApiInputs()"> Vertex Gateway</label>
+          <label><input type="radio" name="botApiType" value="gemini" onchange="toggleBotApiInputs()"> Gemini API Direct</label>
+          <label><input type="radio" name="botApiType" value="vertex" onchange="toggleBotApiInputs()"> Vertex AI (OAuth)</label>
+          <label><input type="radio" name="botApiType" value="openai" onchange="toggleBotApiInputs()"> ChatGPT / OpenAI</label>
+        </div>
       </div>
 
-      <div id="groupGateway">
+      <div id="botGatewayGroup">
         <div class="form-group">
           <label>Vertex Gateway Base URL</label>
-          <input type="text" id="baseUrl" placeholder="https://answers-name-theology-ruling.trycloudflare.com">
+          <input type="text" id="botBaseUrl" value="https://fisher-fare-wiley-travelling.trycloudflare.com">
         </div>
         <div class="form-group">
-          <label>Gateway API Keys — mỗi dòng 1 key, tự xoay vòng mỗi lượt gọi</label>
-          <textarea id="apiKeysGateway" placeholder="key_1
-key_2
-key_3"></textarea>
+          <label>Gateway API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
+          <textarea id="botApiKeysGateway" placeholder="key_1\nkey_2"></textarea>
         </div>
       </div>
 
-      <div id="groupGemini" style="display:none">
+      <div id="botGeminiGroup" style="display:none">
         <div class="form-group">
           <label>Gemini Base URL</label>
-          <input type="text" id="geminiBaseUrl" placeholder="https://generativelanguage.googleapis.com">
+          <input type="text" id="botGeminiBaseUrl" value="https://generativelanguage.googleapis.com">
         </div>
         <div class="form-group">
-          <label>Gemini API Keys — mỗi dòng 1 key, tự xoay vòng mỗi lượt gọi</label>
-          <textarea id="apiKeysGemini" placeholder="AIza...
-AIza...
-AIza..."></textarea>
+          <label>Gemini API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
+          <textarea id="botApiKeysGemini" placeholder="AIza...\nAIza..."></textarea>
         </div>
       </div>
 
-      <div id="groupVertex" style="display:none">
+      <div id="botVertexGroup" style="display:none">
         <div class="form-group">
-          <label>Service Account JSON File</label>
+          <label>Service Account JSON File (Vertex AI OAuth)</label>
           <div style="display:flex; gap:10px">
-            <input type="text" id="serviceAccountPath" readonly placeholder="Chọn file JSON từ Google Cloud">
+            <input type="text" id="botServiceAccountPath" readonly placeholder="Chọn file JSON từ máy tính">
             <button onclick="pickServiceAccount()" class="secondary" style="white-space:nowrap">Chọn File</button>
           </div>
         </div>
       </div>
 
-      <div id="groupOpenAI" style="display:none">
+      <div id="botOpenAIGroup" style="display:none">
         <div class="form-group">
           <label>OpenAI Base URL</label>
-          <input type="text" id="openaiBaseUrl" placeholder="https://api.openai.com">
+          <input type="text" id="botOpenAIBaseUrl" value="https://api.openai.com">
         </div>
         <div class="form-group">
-          <label>OpenAI / ChatGPT API Keys — mỗi dòng 1 key, tự xoay vòng mỗi lượt gọi</label>
-          <textarea id="apiKeysOpenAI" placeholder="sk-...
-sk-...
-sk-..."></textarea>
+          <label>OpenAI API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
+          <textarea id="botApiKeysOpenAI" placeholder="sk-...\nsk-..."></textarea>
         </div>
       </div>
-      
-      <button onclick="saveGlobalConfig()">Lưu cấu hình API</button>
-    </div>
 
-    <div class="card">
-      <h3>Thêm Chatbot</h3>
-      <div class="form-group">
-        <label>Tên Bot</label>
-        <input type="text" id="botName" placeholder="Ví dụ: Copywriter">
-      </div>
       <div class="form-group">
         <label>Model ID</label>
         <select id="botModel"></select>
-        <small style="color:#94a3b8">Danh sách model tự đổi theo loại API đang chọn.</small>
       </div>
+
       <div class="form-group">
-        <label>System Instruction</label>
-        <textarea id="systemInstruction" placeholder="Chỉ dẫn của Gemini..."></textarea>
+        <label>Ngôn ngữ đầu ra mặc định</label>
+        <select id="botOutputLanguage">
+          <option value="en">English</option>
+          <option value="vi">Tiếng Việt</option>
+        </select>
       </div>
-      <button onclick="addBot()">Lưu Chatbot</button>
+
+      <div class="form-group">
+        <label>System Instruction (Gem chỉ dẫn)</label>
+        <textarea id="systemInstruction" placeholder="Bạn là một chuyên gia về..."></textarea>
+      </div>
+
+      <div style="display:flex; gap:10px">
+        <button id="saveBotBtn" onclick="addBot()">Lưu Chatbot</button>
+        <button class="secondary" onclick="clearBotForm()">Hủy / Tạo mới</button>
+      </div>
     </div>
 
     <div class="card">
-      <h3>Danh sách Chatbot</h3>
+      <h3>Danh sách Chatbot đã lưu</h3>
       <div id="botList"></div>
     </div>
   </div>
 
+  <!-- TAB 2: Sáng tạo đa Bot -->
   <div id="tab2" class="tab-content">
     <div class="card">
-      <h3>Sáng tạo nội dung mới</h3>
+      <h3>Sáng tạo nội dung (Chạy nhiều Bot cùng lúc)</h3>
+      
+      <label>Chọn các Chatbot để thực hiện (Tick để chọn)</label>
+      <div id="multiBotList" class="multi-bot-select"></div>
+
       <div class="form-group">
-        <label>Chọn Chatbot</label>
-        <select id="selectBotTab2"></select>
-      </div>
-      <div class="form-group">
-        <label>Độ dài (Ký tự)</label>
+        <label>Độ dài nội dung (Ký tự)</label>
         <div class="range-group">
           Từ <input type="number" id="minChars" value="500"> 
           đến <input type="number" id="maxChars" value="1000">
@@ -149,38 +152,45 @@ sk-..."></textarea>
       </div>
       <div class="form-group">
         <label>Tiêu đề / Chủ đề</label>
-        <input type="text" id="topic" placeholder="Nhập tiêu đề hoặc chủ đề">
+        <input type="text" id="topic" placeholder="Nhập chủ đề cần viết">
       </div>
       <div class="form-group">
         <label>Yêu cầu cụ thể</label>
-        <textarea id="requirements" placeholder="Nhập yêu cầu chi tiết..."></textarea>
+        <textarea id="requirements" placeholder="Nhập yêu cầu chi tiết đầu ra..."></textarea>
       </div>
-      <button id="generateBtn" onclick="generateContent()">Bắt đầu sáng tạo</button>
-      <button class="secondary" onclick="copyOutput('outputTab2')">Copy nội dung</button>
-      <button class="secondary" onclick="downloadOutput('outputTab2','generated-content.txt')">Tải .txt</button>
-      <div id="outputTab2" class="output-box">Kết quả...</div>
+      
+      <div style="display:flex; gap:10px; margin-bottom:15px">
+        <button id="generateBtn" onclick="generateContent()" style="background:#059669">Bắt đầu chạy tất cả Bot đã chọn</button>
+        <button class="secondary" onclick="copyOutput('outputTab2')">Copy tất cả kết quả</button>
+        <button class="secondary" onclick="downloadOutput('outputTab2','multi-bot-content.txt')">Tải file .txt</button>
+      </div>
+
+      <div id="outputTab2" class="output-box">Kết quả từ các bot sẽ hiện ở đây...</div>
     </div>
   </div>
 
+  <!-- TAB 3: Viết lại -->
   <div id="tab3" class="tab-content">
     <div class="card">
       <h3>Viết lại nội dung</h3>
       <div class="form-group">
-        <label>Chọn Chatbot</label>
+        <label>Chọn Chatbot xử lý</label>
         <select id="selectBotTab3"></select>
       </div>
       <div class="form-group">
         <label>Nội dung gốc</label>
-        <textarea id="originalContent" style="min-height: 150px;" placeholder="Dán nội dung vào đây..."></textarea>
+        <textarea id="originalContent" style="min-height: 180px;" placeholder="Dán nội dung cần viết lại vào đây..."></textarea>
       </div>
       <div class="form-group">
         <label>Yêu cầu viết lại</label>
         <textarea id="rewriteRequirements" placeholder="Hài hước, chuyên nghiệp, ngắn gọn..."></textarea>
       </div>
-      <button id="rewriteBtn" onclick="rewriteContent()">Bắt đầu viết lại</button>
-      <button class="secondary" onclick="copyOutput('outputTab3')">Copy nội dung</button>
-      <button class="secondary" onclick="downloadOutput('outputTab3','rewritten-content.txt')">Tải .txt</button>
-      <div id="outputTab3" class="output-box">Nội dung mới...</div>
+      <div style="display:flex; gap:10px; margin-bottom:15px">
+        <button id="rewriteBtn" onclick="rewriteContent()">Bắt đầu viết lại</button>
+        <button class="secondary" onclick="copyOutput('outputTab3')">Copy nội dung</button>
+        <button class="secondary" onclick="downloadOutput('outputTab3','rewritten-content.txt')">Tải file .txt</button>
+      </div>
+      <div id="outputTab3" class="output-box">Nội dung mới sẽ hiện ở đây...</div>
     </div>
   </div>
 </div>
