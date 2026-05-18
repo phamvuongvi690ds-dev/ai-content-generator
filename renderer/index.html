@@ -49,6 +49,14 @@
         <label><input type="radio" name="apiType" value="openai" onchange="toggleApiInputs()"> ChatGPT / OpenAI</label>
       </div>
 
+      <div class="form-group">
+        <label>Ngôn ngữ prompt / nội dung xuất ra</label>
+        <select id="outputLanguage">
+          <option value="en">English</option>
+          <option value="vi">Tiếng Việt</option>
+        </select>
+      </div>
+
       <div id="groupGateway">
         <div class="form-group">
           <label>Vertex Gateway Base URL</label>
@@ -148,6 +156,8 @@ sk-..."></textarea>
         <textarea id="requirements" placeholder="Nhập yêu cầu chi tiết..."></textarea>
       </div>
       <button id="generateBtn" onclick="generateContent()">Bắt đầu sáng tạo</button>
+      <button class="secondary" onclick="copyOutput('outputTab2')">Copy nội dung</button>
+      <button class="secondary" onclick="downloadOutput('outputTab2','generated-content.txt')">Tải .txt</button>
       <div id="outputTab2" class="output-box">Kết quả...</div>
     </div>
   </div>
@@ -168,6 +178,8 @@ sk-..."></textarea>
         <textarea id="rewriteRequirements" placeholder="Hài hước, chuyên nghiệp, ngắn gọn..."></textarea>
       </div>
       <button id="rewriteBtn" onclick="rewriteContent()">Bắt đầu viết lại</button>
+      <button class="secondary" onclick="copyOutput('outputTab3')">Copy nội dung</button>
+      <button class="secondary" onclick="downloadOutput('outputTab3','rewritten-content.txt')">Tải .txt</button>
       <div id="outputTab3" class="output-box">Nội dung mới...</div>
     </div>
   </div>

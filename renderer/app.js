@@ -1,4 +1,4 @@
-let config = { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', apiKeys: [], keyIndex: {}, serviceAccountPath: '', geminiBaseUrl: 'https://generativelanguage.googleapis.com', openaiBaseUrl: 'https://api.openai.com' };
+let config = { bots: [], apiType: 'gateway', outputLanguage: 'en', baseUrl: '', apiKey: '', apiKeys: [], keyIndex: {}, serviceAccountPath: '', geminiBaseUrl: 'https://generativelanguage.googleapis.com', openaiBaseUrl: 'https://api.openai.com' };
 
 const MODEL_OPTIONS = {
   gateway: [
@@ -56,6 +56,7 @@ window.onload = async () => {
   config = await window.api.getConfig();
   document.querySelector(`input[name="apiType"][value="${config.apiType || 'gateway'}"]`).checked = true;
   document.getElementById('baseUrl').value = config.baseUrl || 'https://answers-name-theology-ruling.trycloudflare.com';
+  document.getElementById('outputLanguage').value = config.outputLanguage || 'en';
   const keysText = (config.apiKeys && config.apiKeys.length ? config.apiKeys : (config.apiKey ? [config.apiKey] : [])).join('\n');
   document.getElementById('apiKeysGateway').value = config.apiType === 'gateway' ? keysText : '';
   document.getElementById('geminiBaseUrl').value = config.geminiBaseUrl || 'https://generativelanguage.googleapis.com';
@@ -93,6 +94,7 @@ async function saveGlobalConfig() {
   const type = document.querySelector('input[name="apiType"]:checked').value;
   config.apiType = type;
   config.baseUrl = document.getElementById('baseUrl').value.trim();
+  config.outputLanguage = document.getElementById('outputLanguage').value || 'en';
   const keyBox = type === 'gemini' ? 'apiKeysGemini' : (type === 'openai' ? 'apiKeysOpenAI' : 'apiKeysGateway');
   config.apiKeys = document.getElementById(keyBox)?.value.split(/\n+/).map(k => k.trim()).filter(Boolean) || [];
   config.apiKey = config.apiKeys[0] || '';
@@ -161,7 +163,8 @@ async function generateContent() {
   await saveGlobalConfig();
   const bot = getSelectedBot('selectBotTab2');
   if (!bot) return alert('Chưa có chatbot. Hãy tạo ở Tab 1.');
-  const prompt = `Viết nội dung mới theo yêu cầu:\nTiêu đề/chủ đề: ${document.getElementById('topic').value.trim()}\nĐộ dài: từ ${document.getElementById('minChars').value} đến ${document.getElementById('maxChars').value} ký tự.\nYêu cầu: ${document.getElementById('requirements').value.trim() || 'Không có.'}\nChỉ trả về nội dung hoàn chỉnh.`;
+  const lang = config.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
+  const prompt = `Create new content with these requirements:\nTitle/topic: ${document.getElementById('topic').value.trim()}\nLength: from ${document.getElementById('minChars').value} to ${document.getElementById('maxChars').value} characters.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${lang}.\nReturn only the final content, no explanation.`;
   const out = document.getElementById('outputTab2');
   out.textContent = 'Đang tạo nội dung...';
   const data = await window.api.callApi({ bot, prompt, config });
@@ -174,9 +177,24 @@ async function rewriteContent() {
   if (!bot) return alert('Chưa có chatbot. Hãy tạo ở Tab 1.');
   const original = document.getElementById('originalContent').value.trim();
   if (!original) return alert('Nhập nội dung gốc.');
-  const prompt = `Viết lại nội dung dưới đây theo yêu cầu:\nYêu cầu: ${document.getElementById('rewriteRequirements').value.trim() || 'Viết lại tự nhiên, rõ ràng, hay hơn, giữ nguyên ý chính.'}\n\nNội dung gốc:\n${original}\n\nChỉ trả về nội dung đã viết lại.`;
+  const lang = config.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
+  const prompt = `Rewrite the content below with these requirements:\nRewrite requirements: ${document.getElementById('rewriteRequirements').value.trim() || 'Rewrite naturally, clearly, better, and keep the original meaning.'}\nOutput language: ${lang}.\n\nOriginal content:\n${original}\n\nReturn only the rewritten content, no explanation.`;
   const out = document.getElementById('outputTab3');
   out.textContent = 'Đang viết lại...';
   const data = await window.api.callApi({ bot, prompt, config });
   out.textContent = extractText(data);
+}
+
+async function copyOutput(id) {
+  const text = document.getElementById(id).textContent || '';
+  if (!text.trim()) return alert('Chưa có nội dung để copy.');
+  await navigator.clipboard.writeText(text);
+  alert('Đã copy nội dung.');
+}
+
+async function downloadOutput(id, filename) {
+  const text = document.getElementById(id).textContent || '';
+  if (!text.trim()) return alert('Chưa có nội dung để tải.');
+  const saved = await window.api.saveTextFile({ filename, text });
+  if (saved) alert('Đã lưu file: ' + saved);
 }

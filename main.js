@@ -22,7 +22,7 @@ ipcMain.handle('get-config', () => {
   if (fs.existsSync(configPath)) {
     return JSON.parse(fs.readFileSync(configPath, 'utf8'));
   }
-  return { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', apiKeys: [], keyIndex: {}, serviceAccountPath: '', geminiBaseUrl: 'https://generativelanguage.googleapis.com', openaiBaseUrl: 'https://api.openai.com' };
+  return { bots: [], apiType: 'gateway', outputLanguage: 'en', baseUrl: '', apiKey: '', apiKeys: [], keyIndex: {}, serviceAccountPath: '', geminiBaseUrl: 'https://generativelanguage.googleapis.com', openaiBaseUrl: 'https://api.openai.com' };
 });
 
 ipcMain.handle('save-config', (event, config) => {
@@ -102,6 +102,17 @@ ipcMain.handle('call-api', async (event, { bot, prompt, config }) => {
   } catch (error) {
     return { error: error.message };
   }
+});
+
+
+ipcMain.handle('save-text-file', async (event, { filename, text }) => {
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    defaultPath: filename || 'ai-content.txt',
+    filters: [{ name: 'Text', extensions: ['txt'] }]
+  });
+  if (canceled || !filePath) return null;
+  fs.writeFileSync(filePath, text || '', 'utf8');
+  return filePath;
 });
 
 ipcMain.handle('select-file', async () => {
