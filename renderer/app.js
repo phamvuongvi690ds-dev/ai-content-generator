@@ -1,5 +1,57 @@
 let config = { bots: [], apiType: 'gateway', baseUrl: '', apiKey: '', apiKeys: [], keyIndex: {}, serviceAccountPath: '', geminiBaseUrl: 'https://generativelanguage.googleapis.com', openaiBaseUrl: 'https://api.openai.com' };
 
+const MODEL_OPTIONS = {
+  gateway: [
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { value: 'imagen-3.0-generate-002', label: 'Imagen 3 Generate 002' },
+    { value: 'imagen-3.0-fast-generate-001', label: 'Imagen 3 Fast Generate 001' }
+  ],
+  gemini: [
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }
+  ],
+  vertex: [
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { value: 'imagen-3.0-generate-002', label: 'Imagen 3 Generate 002' },
+    { value: 'imagen-3.0-fast-generate-001', label: 'Imagen 3 Fast Generate 001' }
+  ],
+  openai: [
+    { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
+    { value: 'gpt-4o', label: 'GPT-4o' },
+    { value: 'gpt-4.1-mini', label: 'GPT-4.1 mini' },
+    { value: 'gpt-4.1', label: 'GPT-4.1' },
+    { value: 'o4-mini', label: 'o4-mini' },
+    { value: 'o3-mini', label: 'o3-mini' }
+  ]
+};
+
+function updateModelOptions(selectedValue = '') {
+  const type = document.querySelector('input[name="apiType"]:checked')?.value || 'gateway';
+  const select = document.getElementById('botModel');
+  if (!select) return;
+  const options = MODEL_OPTIONS[type] || MODEL_OPTIONS.gateway;
+  select.innerHTML = '';
+  options.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.value;
+    opt.textContent = `${m.label} (${m.value})`;
+    select.appendChild(opt);
+  });
+  if (selectedValue && !options.some(m => m.value === selectedValue)) {
+    const custom = document.createElement('option');
+    custom.value = selectedValue;
+    custom.textContent = `Custom/current: ${selectedValue}`;
+    select.appendChild(custom);
+  }
+  select.value = selectedValue || options[0].value;
+}
+
+
 window.onload = async () => {
   config = await window.api.getConfig();
   document.querySelector(`input[name="apiType"][value="${config.apiType || 'gateway'}"]`).checked = true;
@@ -12,6 +64,7 @@ window.onload = async () => {
   document.getElementById('openaiBaseUrl').value = config.openaiBaseUrl || 'https://api.openai.com';
   document.getElementById('apiKeysOpenAI').value = config.apiType === 'openai' ? keysText : '';
   toggleApiInputs();
+  updateModelOptions();
   renderBots();
 };
 
@@ -28,6 +81,7 @@ function toggleApiInputs() {
   document.getElementById('groupGemini').style.display = type === 'gemini' ? 'block' : 'none';
   document.getElementById('groupVertex').style.display = type === 'vertex' ? 'block' : 'none';
   document.getElementById('groupOpenAI').style.display = type === 'openai' ? 'block' : 'none';
+  updateModelOptions(document.getElementById('botModel')?.value || '');
 }
 
 async function pickServiceAccount() {
@@ -51,7 +105,7 @@ async function saveGlobalConfig() {
 
 async function addBot() {
   const name = document.getElementById('botName').value.trim();
-  const model = document.getElementById('botModel').value.trim() || 'gemini-2.5-flash';
+  const model = document.getElementById('botModel').value || 'gemini-2.5-flash';
   const systemInstruction = document.getElementById('systemInstruction').value.trim();
   if (!name || !systemInstruction) return alert('Nhập tên bot và system instruction.');
   const existingIndex = config.bots.findIndex(b => b.name === name);
@@ -60,7 +114,7 @@ async function addBot() {
   else config.bots.push(bot);
   await window.api.saveConfig(config);
   document.getElementById('botName').value = '';
-  document.getElementById('botModel').value = '';
+  updateModelOptions();
   document.getElementById('systemInstruction').value = '';
   renderBots();
 }
@@ -75,7 +129,7 @@ async function deleteBot(index) {
 function editBot(index) {
   const bot = config.bots[index];
   document.getElementById('botName').value = bot.name;
-  document.getElementById('botModel').value = bot.model;
+  updateModelOptions(bot.model);
   document.getElementById('systemInstruction').value = bot.systemInstruction;
   showTab(1);
 }
