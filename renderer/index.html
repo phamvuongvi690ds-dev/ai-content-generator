@@ -10,13 +10,13 @@
     .tab { padding: 13px 16px; cursor: pointer; border-radius: 12px; border-left: 3px solid transparent; transition: 0.2s; font-weight: 600; color:#94a3b8; }
     .tab:hover { background: #1e293b; color:#fff; }
     .tab.active { background:#172554; border-left-color: var(--accent); color:#dbeafe; }
-    .content-area { flex: 1; padding: 26px; overflow-y: auto; background: radial-gradient(circle at top left,#172554 0,#0b1120 35%); }
+    .content-area { flex: 1; padding: 26px; overflow-y: auto; background: radial-gradient(circle at top left,#172554 0,#0b1120 35%); position: relative; z-index: 1; }
     .tab-content { display: none; max-width: 1000px; margin: 0 auto; }
     .tab-content.active { display: block; }
-    .card { background: rgba(30,41,59,.92); border: 1px solid #334155; border-radius: 18px; padding: 22px; margin-bottom: 20px; box-shadow:0 20px 50px rgba(0,0,0,.22); }
+    .card { background: rgba(30,41,59,.92); border: 1px solid #334155; border-radius: 18px; padding: 22px; margin-bottom: 20px; box-shadow:0 20px 50px rgba(0,0,0,.22); position: relative; z-index: 2; }
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; font-size: 14px; color: #94a3b8; }
-    input, textarea, select { width: 100%; background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 12px; color: white; box-sizing: border-box; font-size: 14px; outline:none; } input:focus, textarea:focus, select:focus { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+    input, textarea, select { width: 100%; background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 12px; color: white; box-sizing: border-box; font-size: 14px; outline:none; position: relative; z-index: 5; pointer-events: auto; } input:focus, textarea:focus, select:focus { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
     textarea { resize: vertical; min-height: 80px; }
     button { background: linear-gradient(135deg,#2563eb,#7c3aed); color: white; border: none; padding: 11px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; }
     button:hover { filter: brightness(1.1); }
@@ -69,7 +69,7 @@
         </div>
         <div class="form-group">
           <label>Gateway API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
-          <textarea id="botApiKeysGateway" placeholder="key_1\nkey_2"></textarea>
+          <textarea id="botApiKeysGateway" placeholder="key_1&#10;key_2"></textarea>
         </div>
       </div>
 
@@ -80,7 +80,7 @@
         </div>
         <div class="form-group">
           <label>Gemini API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
-          <textarea id="botApiKeysGemini" placeholder="AIza...\nAIza..."></textarea>
+          <textarea id="botApiKeysGemini" placeholder="AIza...&#10;AIza..."></textarea>
         </div>
       </div>
 
@@ -101,7 +101,7 @@
         </div>
         <div class="form-group">
           <label>OpenAI API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
-          <textarea id="botApiKeysOpenAI" placeholder="sk-...\nsk-..."></textarea>
+          <textarea id="botApiKeysOpenAI" placeholder="sk-...&#10;sk-..."></textarea>
         </div>
       </div>
 

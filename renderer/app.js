@@ -263,3 +263,8 @@ async function downloadOutput(id, filename) {
   const saved = await window.api.saveTextFile({ filename, text });
   if (saved) alert('Đã lưu file: ' + saved);
 }
+
+document.addEventListener('click', (e) => {
+  const editable = e.target.closest('input, textarea, select');
+  if (editable && typeof editable.focus === 'function') editable.focus();
+}, true);
