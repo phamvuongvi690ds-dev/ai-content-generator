@@ -209,18 +209,23 @@ function languageName(bot) {
 async function generateContent() {
   const indexes = selectedBotIndexes();
   if (!indexes.length) return alert('Chọn ít nhất 1 chatbot để chạy.');
-  const topic = document.getElementById('topic').value.trim();
-  if (!topic) return alert('Nhập tiêu đề/chủ đề.');
+  const titles = document.getElementById('topic').value.split(/\n+/).map(t => t.trim()).filter(Boolean);
+  if (!titles.length) return alert('Nhập ít nhất 1 tiêu đề.');
 
   const out = document.getElementById('outputTab2');
-  out.textContent = 'Đang chạy nhiều chatbot...';
+  out.textContent = `Đang chạy ${indexes.length} bot cho ${titles.length} tiêu đề...`;
 
-  const tasks = indexes.map(async idx => {
-    const bot = config.bots[idx];
-    const prompt = `Create new content with these requirements:\nTitle/topic: ${topic}\nLength: from ${document.getElementById('minChars').value} to ${document.getElementById('maxChars').value} characters.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation.`;
-    const data = await window.api.callApi({ bot, prompt });
-    return `==============================\nBOT: ${bot.name}\nAPI: ${bot.apiType} · MODEL: ${bot.model}\n==============================\n${extractText(data)}`;
-  });
+  const tasks = [];
+  for (const title of titles) {
+    for (const idx of indexes) {
+      const bot = config.bots[idx];
+      const prompt = `Create ONE complete content piece based on this title:\nTitle: ${title}\nLength: from ${document.getElementById('minChars').value} to ${document.getElementById('maxChars').value} characters.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation.`;
+      tasks.push((async () => {
+        const data = await window.api.callApi({ bot, prompt });
+        return `==============================\nTITLE: ${title}\nBOT: ${bot.name}\nAPI: ${bot.apiType} · MODEL: ${bot.model}\n==============================\n${extractText(data)}`;
+      })());
+    }
+  }
 
   const results = await Promise.all(tasks);
   out.textContent = results.join('\n\n');
