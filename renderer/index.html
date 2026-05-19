@@ -16,8 +16,8 @@
     .card { background: rgba(30,41,59,.92); border: 1px solid #334155; border-radius: 18px; padding: 22px; margin-bottom: 20px; box-shadow:0 20px 50px rgba(0,0,0,.22); position: relative; z-index: 2; }
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; font-size: 14px; color: #94a3b8; }
-    input, textarea, select { width: 100%; background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 12px; color: white; box-sizing: border-box; font-size: 14px; outline:none; position: relative; z-index: 5; pointer-events: auto; } input:focus, textarea:focus, select:focus { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-    textarea { resize: vertical; min-height: 80px; }
+    input, textarea, select { width: 100%; background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 12px; color: white; box-sizing: border-box; font-size: 14px; outline:none; position: relative; z-index: 50; pointer-events: auto !important; user-select: text; -webkit-user-select: text; -webkit-app-region: no-drag; } input:focus, textarea:focus, select:focus { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+    textarea { resize: vertical; min-height: 80px; display:block; cursor:text; }
     button { background: linear-gradient(135deg,#2563eb,#7c3aed); color: white; border: none; padding: 11px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; }
     button:hover { filter: brightness(1.1); }
     button.secondary { background: #475569; }
@@ -120,7 +120,7 @@
 
       <div class="form-group">
         <label>System Instruction (Gem chỉ dẫn)</label>
-        <textarea id="systemInstruction" placeholder="Bạn là một chuyên gia về..."></textarea>
+        <textarea id="systemInstruction" rows="8" style="min-height:180px; pointer-events:auto !important; user-select:text; -webkit-user-select:text;" placeholder="Nhap chi dan cho chatbot..."></textarea>
       </div>
 
       <div style="display:flex; gap:10px">

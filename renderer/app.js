@@ -264,7 +264,9 @@ async function downloadOutput(id, filename) {
   if (saved) alert('Đã lưu file: ' + saved);
 }
 
-document.addEventListener('click', (e) => {
+document.addEventListener('mousedown', (e) => {
   const editable = e.target.closest('input, textarea, select');
-  if (editable && typeof editable.focus === 'function') editable.focus();
-}, true);
+  if (editable && document.activeElement !== editable && typeof editable.focus === 'function') {
+    setTimeout(() => editable.focus(), 0);
+  }
+}, false);
