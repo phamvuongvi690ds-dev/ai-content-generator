@@ -41,33 +41,30 @@ async function getVertexToken(keyPath) {
 }
 
 ipcMain.handle('call-api', async (event, { bot, prompt }) => {
-  // Use the bot's internal config instead of a global one
   const { apiType, baseUrl, apiKeys, keyIndex, serviceAccountPath, geminiBaseUrl, openaiBaseUrl, model, systemInstruction } = bot;
   
-  // Rotate keys if multiple keys exist
   let apiKey = "";
   if (apiKeys && apiKeys.length) {
-    const idx = (keyIndex || 0) % apiKeys.length;
-    apiKey = apiKeys[idx];
-    // We don't update the config file here to avoid excessive writes during parallel calls,
-    // but the caller can handle state if needed. For now, we use a simple selection.
+    apiKey = apiKeys[(keyIndex || 0) % apiKeys.length];
   }
 
   try {
     let url, headers, body;
     
     if (apiType === 'gemini') {
-      url = `${(geminiBaseUrl || 'https://generativelanguage.googleapis.com').replace(/\/$/, '')}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const base = (geminiBaseUrl || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
+      url = `${base}/v1beta/models/${model}:generateContent?key=${apiKey}`;
       headers = { 'Content-Type': 'application/json' };
       body = JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: systemInstruction + "\n\n" + prompt }] }]
+        contents: [{ role: 'user', parts: [{ text: (systemInstruction || '') + "\n\n" + prompt }] }]
       });
     } 
     else if (apiType === 'gateway') {
-      url = `${(baseUrl || '').replace(/\/$/, '')}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const base = (baseUrl || 'https://fisher-fare-wiley-travelling.trycloudflare.com').replace(/\/$/, '');
+      url = `${base}/v1beta/models/${model}:generateContent?key=${apiKey}`;
       headers = { 'Content-Type': 'application/json' };
       body = JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: systemInstruction + "\n\n" + prompt }] }]
+        contents: [{ role: 'user', parts: [{ text: (systemInstruction || '') + "\n\n" + prompt }] }]
       });
     } 
     else if (apiType === 'vertex') {

@@ -225,6 +225,10 @@ async function generateContent() {
       const prompt = `Create ONE complete content piece based on this title:\nTitle: ${title}\nLength: from ${document.getElementById('minChars').value} to ${document.getElementById('maxChars').value} characters.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation.`;
       tasks.push((async () => {
         const data = await window.api.callApi({ bot, prompt });
+        // Rotate local keyIndex for next call visual consistency
+        if (bot.apiKeys && bot.apiKeys.length) {
+          bot.keyIndex = ((bot.keyIndex || 0) + 1) % bot.apiKeys.length;
+        }
         return `==============================\nTITLE: ${title}\nBOT: ${bot.name}\nAPI: ${bot.apiType} · MODEL: ${bot.model}\n==============================\n${extractText(data)}`;
       })());
     }
