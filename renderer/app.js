@@ -38,6 +38,8 @@ window.onload = async () => {
   toggleBotApiInputs();
   updateModelOptions();
   renderBots();
+  setOutput('outputTab2', document.getElementById('outputTab2')?.textContent || '');
+  setOutput('outputTab3', document.getElementById('outputTab3')?.textContent || '');
 };
 
 function showTab(n) {
@@ -211,8 +213,9 @@ function setOutput(id, text) {
   el.textContent = text || '';
   const counterId = id === 'outputTab2' ? 'counterTab2' : (id === 'outputTab3' ? 'counterTab3' : null);
   if (counterId) {
+    const counter = document.getElementById(counterId);
     const count = (text || '').length;
-    document.getElementById(counterId).textContent = `${count.toLocaleString('vi-VN')} ký tự`;
+    if (counter) counter.textContent = `Bộ đếm: ${count.toLocaleString('vi-VN')} ký tự`;
   }
 }
 

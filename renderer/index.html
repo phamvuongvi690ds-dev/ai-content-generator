@@ -23,7 +23,8 @@
     button.secondary { background: #475569; }
     .bot-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border); }
     .output-box { background: #020617; border: 1px solid var(--accent); padding: 15px; border-radius: 8px; white-space: pre-wrap; margin-top: 6px; min-height: 150px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.5; }
-    .char-counter { text-align:right; color:#38bdf8; font-size:13px; font-weight:700; margin-top:12px; }
+    .output-wrap { position: relative; margin-top:12px; }
+    .char-counter { display:inline-block; background:#0ea5e9; color:#00111f; font-size:13px; font-weight:900; padding:6px 10px; border-radius:999px; margin-bottom:8px; box-shadow:0 0 0 2px rgba(14,165,233,.25); }
     .range-group { display: flex; gap: 10px; align-items: center; }
     .range-group input { width: 100px; }
     .api-options { display: flex; gap: 15px; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
@@ -168,8 +169,10 @@ Title 3..."></textarea>
         <button class="secondary" onclick="downloadOutput('outputTab2','multi-bot-content.txt')">Tải file .txt</button>
       </div>
 
-      <div class="char-counter" id="counterTab2">0 ký tự</div>
-      <div id="outputTab2" class="output-box">Kết quả từ các bot sẽ hiện ở đây...</div>
+      <div class="output-wrap">
+        <div class="char-counter" id="counterTab2">0 ký tự</div>
+        <div id="outputTab2" class="output-box">Kết quả từ các bot sẽ hiện ở đây...</div>
+      </div>
     </div>
   </div>
 
@@ -194,8 +197,10 @@ Title 3..."></textarea>
         <button class="secondary" onclick="copyOutput('outputTab3')">Copy nội dung</button>
         <button class="secondary" onclick="downloadOutput('outputTab3','rewritten-content.txt')">Tải file .txt</button>
       </div>
-      <div class="char-counter" id="counterTab3">0 ký tự</div>
-      <div id="outputTab3" class="output-box">Nội dung mới sẽ hiện ở đây...</div>
+      <div class="output-wrap">
+        <div class="char-counter" id="counterTab3">0 ký tự</div>
+        <div id="outputTab3" class="output-box">Nội dung mới sẽ hiện ở đây...</div>
+      </div>
     </div>
   </div>
 </div>
