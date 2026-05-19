@@ -30,6 +30,22 @@ ipcMain.handle('save-config', (event, config) => {
   return true;
 });
 
+
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+function isRetryableError(data) {
+  const code = data?.error?.code;
+  const status = data?.error?.status;
+  return code === 429 || code === 500 || code === 502 || code === 503 || code === 504 || status === 'UNAVAILABLE' || status === 'RESOURCE_EXHAUSTED';
+}
+
+function fallbackModels(apiType, model) {
+  const list = apiType === 'openai'
+    ? ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini']
+    : ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-pro'];
+  return [model, ...list.filter(m => m !== model)];
+}
+
 async function getVertexToken(keyPath) {
   const auth = new GoogleAuth({
     keyFile: keyPath,
@@ -41,69 +57,62 @@ async function getVertexToken(keyPath) {
 }
 
 ipcMain.handle('call-api', async (event, { bot, prompt }) => {
-  const { apiType, baseUrl, apiKeys, keyIndex, serviceAccountPath, geminiBaseUrl, openaiBaseUrl, model, systemInstruction } = bot;
-  
-  let apiKey = "";
-  if (apiKeys && apiKeys.length) {
-    apiKey = apiKeys[(keyIndex || 0) % apiKeys.length];
-  }
+  const { apiType, baseUrl, apiKeys, keyIndex, serviceAccountPath, geminiBaseUrl, openaiBaseUrl, systemInstruction } = bot;
+  const keys = apiKeys && apiKeys.length ? apiKeys : [''];
+  const models = fallbackModels(apiType, bot.model || 'gemini-2.5-flash');
+  let lastData = null;
 
-  try {
-    let url, headers, body;
-    
-    if (apiType === 'gemini') {
-      const base = (geminiBaseUrl || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
-      url = `${base}/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      headers = { 'Content-Type': 'application/json' };
-      body = JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: (systemInstruction || '') + "\n\n" + prompt }] }]
-      });
-    } 
-    else if (apiType === 'gateway') {
-      const base = (baseUrl || 'https://fisher-fare-wiley-travelling.trycloudflare.com').replace(/\/$/, '');
-      url = `${base}/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      headers = { 'Content-Type': 'application/json' };
-      body = JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: (systemInstruction || '') + "\n\n" + prompt }] }]
-      });
-    } 
-    else if (apiType === 'vertex') {
-      const token = await getVertexToken(serviceAccountPath);
-      let projectId = "";
-      if (fs.existsSync(serviceAccountPath)) {
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const apiKey = keys[((keyIndex || 0) + attempt) % keys.length];
+      try {
+        let url, headers, body;
+        
+        if (apiType === 'gemini') {
+          const base = (geminiBaseUrl || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
+          url = `${base}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+          headers = { 'Content-Type': 'application/json' };
+          body = JSON.stringify({ contents: [{ role: 'user', parts: [{ text: (systemInstruction || '') + "\n\n" + prompt }] }] });
+        } else if (apiType === 'gateway') {
+          const base = (baseUrl || 'https://fisher-fare-wiley-travelling.trycloudflare.com').replace(/\/$/, '');
+          url = `${base}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+          headers = { 'Content-Type': 'application/json' };
+          body = JSON.stringify({ contents: [{ role: 'user', parts: [{ text: (systemInstruction || '') + "\n\n" + prompt }] }] });
+        } else if (apiType === 'vertex') {
+          const token = await getVertexToken(serviceAccountPath);
           const keyData = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-          projectId = keyData.project_id;
-      }
-      url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/${model}:generateContent`;
-      headers = { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      };
-      body = JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: systemInstruction + "\n\n" + prompt }] }]
-      });
-    }
-    else if (apiType === 'openai') {
-      url = `${(openaiBaseUrl || 'https://api.openai.com').replace(/\/$/, '')}/v1/chat/completions`;
-      headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      };
-      body = JSON.stringify({
-        model: model || 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemInstruction || '' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.8
-      });
-    }
+          url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${keyData.project_id}/locations/us-central1/publishers/google/models/${model}:generateContent`;
+          headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+          body = JSON.stringify({ contents: [{ role: 'user', parts: [{ text: (systemInstruction || '') + "\n\n" + prompt }] }] });
+        } else if (apiType === 'openai') {
+          url = `${(openaiBaseUrl || 'https://api.openai.com').replace(/\/$/, '')}/v1/chat/completions`;
+          headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
+          body = JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: systemInstruction || '' },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.8
+          });
+        }
 
-    const response = await fetch(url, { method: 'POST', headers, body });
-    return await response.json();
-  } catch (error) {
-    return { error: error.message };
+        const response = await fetch(url, { method: 'POST', headers, body });
+        const data = await response.json();
+        lastData = data;
+        if (!data?.error) {
+          if (model !== bot.model) data._fallbackModelUsed = model;
+          return data;
+        }
+        if (!isRetryableError(data)) return data;
+        await sleep(1500 * (attempt + 1));
+      } catch (error) {
+        lastData = { error: error.message };
+        await sleep(1000 * (attempt + 1));
+      }
+    }
   }
+  return lastData || { error: 'All retries failed.' };
 });
 
 ipcMain.handle('select-file', async () => {

@@ -204,7 +204,8 @@ function selectedBotIndexes() {
 }
 
 function extractText(data) {
-  return data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || JSON.stringify(data, null, 2);
+  const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || JSON.stringify(data, null, 2);
+  return data?._fallbackModelUsed ? `[Fallback model used: ${data._fallbackModelUsed}]\n\n${text}` : text;
 }
 
 function setOutput(id, text) {
