@@ -43,8 +43,11 @@ window.onload = async () => {
 function showTab(n) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.querySelector(`.tab:nth-child(${n})`).classList.add('active');
-  document.getElementById(`tab${n}`).classList.add('active');
+  const tabButtons = Array.from(document.querySelectorAll('.tab'));
+  const targetButton = tabButtons[n - 1];
+  const targetContent = document.getElementById(`tab${n}`);
+  if (targetButton) targetButton.classList.add('active');
+  if (targetContent) targetContent.classList.add('active');
 }
 
 function currentBotApiType() {
