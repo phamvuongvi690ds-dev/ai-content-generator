@@ -205,6 +205,17 @@ function extractText(data) {
   return data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || JSON.stringify(data, null, 2);
 }
 
+function setOutput(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text || '';
+  const counterId = id === 'outputTab2' ? 'counterTab2' : (id === 'outputTab3' ? 'counterTab3' : null);
+  if (counterId) {
+    const count = (text || '').length;
+    document.getElementById(counterId).textContent = `${count.toLocaleString('vi-VN')} ký tự`;
+  }
+}
+
 function languageName(bot) {
   return bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
 }
@@ -216,7 +227,7 @@ async function generateContent() {
   if (!titles.length) return alert('Nhập ít nhất 1 tiêu đề.');
 
   const out = document.getElementById('outputTab2');
-  out.textContent = `Đang chạy ${indexes.length} bot cho ${titles.length} tiêu đề...`;
+  setOutput('outputTab2', `Đang chạy ${indexes.length} bot cho ${titles.length} tiêu đề...`);
 
   const tasks = [];
   for (const title of titles) {
@@ -235,7 +246,7 @@ async function generateContent() {
   }
 
   const results = await Promise.all(tasks);
-  out.textContent = results.join('\n\n');
+  setOutput('outputTab2', results.join('\n\n'));
 }
 
 async function rewriteContent() {
@@ -245,9 +256,9 @@ async function rewriteContent() {
   if (!original) return alert('Nhập nội dung gốc.');
   const prompt = `Rewrite the content below with these requirements:\nRewrite requirements: ${document.getElementById('rewriteRequirements').value.trim() || 'Rewrite naturally, clearly, better, and keep the original meaning.'}\nOutput language: ${languageName(bot)}.\n\nOriginal content:\n${original}\n\nReturn only the rewritten content, no explanation.`;
   const out = document.getElementById('outputTab3');
-  out.textContent = 'Đang viết lại...';
+  setOutput('outputTab3', 'Đang viết lại...');
   const data = await window.api.callApi({ bot, prompt });
-  out.textContent = extractText(data);
+  setOutput('outputTab3', extractText(data));
 }
 
 async function copyOutput(id) {
