@@ -46,13 +46,20 @@ window.onload = async () => {
 };
 
 function showTab(n) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const tabButtons = Array.from(document.querySelectorAll('.tab'));
+  const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
   const targetButton = tabButtons[n - 1];
   const targetContent = document.getElementById(`tab${n}`);
   if (targetButton) targetButton.classList.add('active');
   if (targetContent) targetContent.classList.add('active');
+  const titles = {
+    1: ['Cấu hình Chatbot', 'Quản lý và thiết lập các trợ lý AI'],
+    2: ['Sáng tạo nội dung', 'Tạo nội dung hàng loạt theo nhiều tiêu đề'],
+    3: ['Viết lại nội dung', 'Tối ưu và viết lại văn bản bằng AI']
+  };
+  document.getElementById('pageTitle').textContent = titles[n]?.[0] || '';
+  document.getElementById('pageSub').textContent = titles[n]?.[1] || '';
 }
 
 function currentBotApiType() {
