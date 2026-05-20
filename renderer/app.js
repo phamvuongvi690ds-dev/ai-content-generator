@@ -3,12 +3,14 @@ let editingIndex = -1;
 
 const MODEL_OPTIONS = {
   gateway: [
+    { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
     { value: 'imagen-3.0-generate-002', label: 'Imagen 3 Generate 002' },
     { value: 'imagen-3.0-fast-generate-001', label: 'Imagen 3 Fast Generate 001' }
   ],
   gemini: [
+    { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
     { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
@@ -16,6 +18,7 @@ const MODEL_OPTIONS = {
     { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }
   ],
   vertex: [
+    { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
     { value: 'imagen-3.0-generate-002', label: 'Imagen 3 Generate 002' },
