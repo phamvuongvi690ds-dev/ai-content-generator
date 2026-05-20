@@ -265,6 +265,38 @@ function showResultTab(idx) {
   renderResultTabs();
   const item = generatedResultsByTitle[idx];
   setOutput('outputTab2', item ? item.content : '');
+  const regBtn = document.getElementById('regenerateBtn');
+  if (regBtn) regBtn.style.display = (generatedResultsByTitle.length > 0) ? 'inline-flex' : 'none';
+}
+
+async function regenerateActiveTitle() {
+  const indexes = selectedBotIndexes();
+  if (!indexes.length) return alert('Chọn chatbot để tạo lại.');
+  const item = generatedResultsByTitle[activeResultIndex];
+  if (!item) return;
+
+  const btn = document.getElementById('regenerateBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang tạo lại...';
+  
+  item.content = 'Đang tạo lại nội dung...';
+  setOutput('outputTab2', item.content);
+
+  const perTitleTasks = indexes.map(async idx => {
+    const bot = config.bots[idx];
+    const targetChars = Number(document.getElementById('maxChars').value || 1000);
+    const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
+    const data = await window.api.callApi({ bot, prompt });
+    if (bot.apiKeys && bot.apiKeys.length) bot.keyIndex = ((bot.keyIndex || 0) + 1) % bot.apiKeys.length;
+    return normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
+  });
+
+  const results = await Promise.all(perTitleTasks);
+  item.content = results.join('\n\n');
+  setOutput('outputTab2', item.content);
+  
+  btn.disabled = false;
+  btn.textContent = '🔄 Tạo lại tab này';
 }
 
 async function generateContent() {
@@ -296,6 +328,7 @@ async function generateContent() {
     allResults.push(content);
     renderResultTabs();
     if (activeResultIndex === titleIndex) setOutput('outputTab2', content);
+    document.getElementById('regenerateBtn').style.display = 'inline-flex';
   }
 
   // Nếu người dùng bấm tải/copy khi không chọn tab, vẫn giữ tab đang xem; data tất cả nằm trong generatedResultsByTitle.
