@@ -224,6 +224,15 @@ function languageName(bot) {
   return bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
 }
 
+function normalizeExactLength(text, targetLen) {
+  text = (text || '').trim();
+  targetLen = Number(targetLen || 0);
+  if (!targetLen || targetLen < 1) return text;
+  if (text.length > targetLen) return text.slice(0, targetLen).trimEnd();
+  return text;
+}
+
+
 async function generateContent() {
   const indexes = selectedBotIndexes();
   if (!indexes.length) return alert('Chọn ít nhất 1 chatbot để chạy.');
@@ -237,14 +246,15 @@ async function generateContent() {
   for (const title of titles) {
     for (const idx of indexes) {
       const bot = config.bots[idx];
-      const prompt = `Create ONE complete content piece based on this title:\nTitle: ${title}\nLength: from ${document.getElementById('minChars').value} to ${document.getElementById('maxChars').value} characters.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation.`;
+      const targetChars = Number(document.getElementById('maxChars').value || 1000);
+      const prompt = `Create ONE complete content piece based on this title:\nTitle: ${title}\nRequired length: EXACTLY ${targetChars} characters, not less and not more. The minimum field is only a reference; the final output must match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
       tasks.push((async () => {
         const data = await window.api.callApi({ bot, prompt });
         // Rotate local keyIndex for next call visual consistency
         if (bot.apiKeys && bot.apiKeys.length) {
           bot.keyIndex = ((bot.keyIndex || 0) + 1) % bot.apiKeys.length;
         }
-        return extractText(data);
+        return normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
       })());
     }
   }
