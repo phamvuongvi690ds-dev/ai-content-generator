@@ -233,35 +233,65 @@ function normalizeExactLength(text, targetLen) {
 }
 
 
+
+let generatedResultsByTitle = [];
+let activeResultIndex = 0;
+
+function renderResultTabs() {
+  const wrap = document.getElementById('resultTabs');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  generatedResultsByTitle.forEach((item, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'result-tab' + (idx === activeResultIndex ? ' active' : '');
+    btn.textContent = `${idx + 1}. ${item.title.slice(0, 34)}${item.title.length > 34 ? '...' : ''}`;
+    btn.onclick = () => showResultTab(idx);
+    wrap.appendChild(btn);
+  });
+}
+
+function showResultTab(idx) {
+  activeResultIndex = idx;
+  renderResultTabs();
+  const item = generatedResultsByTitle[idx];
+  setOutput('outputTab2', item ? item.content : '');
+}
+
 async function generateContent() {
   const indexes = selectedBotIndexes();
   if (!indexes.length) return alert('Chọn ít nhất 1 chatbot để chạy.');
   const titles = document.getElementById('topic').value.split(/\n+/).map(t => t.trim()).filter(Boolean);
   if (!titles.length) return alert('Nhập ít nhất 1 tiêu đề.');
 
-  const out = document.getElementById('outputTab2');
-  setOutput('outputTab2', `Đang chạy ${indexes.length} bot cho ${titles.length} tiêu đề...`);
+  generatedResultsByTitle = titles.map(t => ({ title: t, content: 'Đang tạo nội dung...' }));
+  activeResultIndex = 0;
+  renderResultTabs();
+  showResultTab(0);
 
-  const tasks = [];
-  for (const title of titles) {
-    for (const idx of indexes) {
+  const allResults = [];
+  for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
+    const title = titles[titleIndex];
+    const perTitleTasks = indexes.map(async idx => {
       const bot = config.bots[idx];
       const targetChars = Number(document.getElementById('maxChars').value || 1000);
       const prompt = `Create ONE complete content piece based on this title:\nTitle: ${title}\nRequired length: EXACTLY ${targetChars} characters, not less and not more. The minimum field is only a reference; the final output must match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
-      tasks.push((async () => {
-        const data = await window.api.callApi({ bot, prompt });
-        // Rotate local keyIndex for next call visual consistency
-        if (bot.apiKeys && bot.apiKeys.length) {
-          bot.keyIndex = ((bot.keyIndex || 0) + 1) % bot.apiKeys.length;
-        }
-        return normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
-      })());
-    }
+      const data = await window.api.callApi({ bot, prompt });
+      if (bot.apiKeys && bot.apiKeys.length) bot.keyIndex = ((bot.keyIndex || 0) + 1) % bot.apiKeys.length;
+      return normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
+    });
+
+    const results = await Promise.all(perTitleTasks);
+    const content = results.join('\n\n');
+    generatedResultsByTitle[titleIndex].content = content;
+    allResults.push(content);
+    renderResultTabs();
+    if (activeResultIndex === titleIndex) setOutput('outputTab2', content);
   }
 
-  const results = await Promise.all(tasks);
-  setOutput('outputTab2', results.join('\n\n'));
+  // Nếu người dùng bấm tải/copy khi không chọn tab, vẫn giữ tab đang xem; data tất cả nằm trong generatedResultsByTitle.
+  showResultTab(activeResultIndex);
 }
+
 
 async function rewriteContent() {
   const bot = config.bots[Number(document.getElementById('selectBotTab3').value)];

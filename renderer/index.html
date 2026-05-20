@@ -25,6 +25,9 @@
     .output-box { background: #020617; border: 1px solid var(--accent); padding: 15px; border-radius: 8px; white-space: pre-wrap; margin-top: 6px; min-height: 150px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.5; }
     .output-wrap { position: relative; margin-top:12px; }
     .char-counter { display:inline-block; background:#0ea5e9; color:#00111f; font-size:13px; font-weight:900; padding:6px 10px; border-radius:999px; margin-bottom:8px; box-shadow:0 0 0 2px rgba(14,165,233,.25); }
+    .result-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .result-tab { background:#0f172a; color:#cbd5e1; border:1px solid #334155; padding:8px 12px; border-radius:999px; cursor:pointer; font-size:13px; font-weight:800; }
+    .result-tab.active { background:#2563eb; color:white; border-color:#60a5fa; }
     .range-group { display: flex; gap: 10px; align-items: center; }
     .range-group input { width: 100px; }
     .api-options { display: flex; gap: 15px; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
@@ -169,6 +172,7 @@ Title 3..."></textarea>
         <button class="secondary" onclick="downloadOutput('outputTab2','multi-bot-content.txt')">Tải file .txt</button>
       </div>
 
+      <div id="resultTabs" class="result-tabs"></div>
       <div class="output-wrap">
         <div class="char-counter" id="counterTab2">0 ký tự</div>
         <div id="outputTab2" class="output-box">Kết quả từ các bot sẽ hiện ở đây...</div>
