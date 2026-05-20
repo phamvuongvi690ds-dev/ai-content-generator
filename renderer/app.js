@@ -244,7 +244,7 @@ async function generateContent() {
         if (bot.apiKeys && bot.apiKeys.length) {
           bot.keyIndex = ((bot.keyIndex || 0) + 1) % bot.apiKeys.length;
         }
-        return `==============================\nTITLE: ${title}\nBOT: ${bot.name}\nAPI: ${bot.apiType} · MODEL: ${bot.model}\n==============================\n${extractText(data)}`;
+        return extractText(data);
       })());
     }
   }
