@@ -54,7 +54,7 @@
       
       <div class="form-group">
         <label>Tên Gợi Nhớ của Chatbot</label>
-        <input type="text" id="botName" placeholder="Ví dụ: Bot SEO, Bot Kịch Bản...">
+        <input type="text" id="botName" style="pointer-events:auto !important; position:relative; z-index:100;" placeholder="Ví dụ: Bot SEO, Bot Kịch Bản...">
       </div>
 
       <div class="form-group">
@@ -74,7 +74,7 @@
         </div>
         <div class="form-group">
           <label>Gateway API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
-          <textarea id="botApiKeysGateway" placeholder="key_1&#10;key_2"></textarea>
+          <textarea id="botApiKeysGateway" class="password-mask" placeholder="key_1&#10;key_2"></textarea>
         </div>
       </div>
 
@@ -85,7 +85,7 @@
         </div>
         <div class="form-group">
           <label>Gemini API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
-          <textarea id="botApiKeysGemini" placeholder="AIza...&#10;AIza..."></textarea>
+          <textarea id="botApiKeysGemini" class="password-mask" placeholder="AIza...&#10;AIza..."></textarea>
         </div>
       </div>
 
@@ -106,7 +106,7 @@
         </div>
         <div class="form-group">
           <label>OpenAI API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
-          <textarea id="botApiKeysOpenAI" placeholder="sk-...&#10;sk-..."></textarea>
+          <textarea id="botApiKeysOpenAI" class="password-mask" placeholder="sk-...&#10;sk-..."></textarea>
         </div>
       </div>
 
