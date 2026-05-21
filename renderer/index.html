@@ -177,6 +177,11 @@ Title 3..."></textarea>
       <div class="output-wrap">
         <div class="char-counter" id="counterTab2">0 ký tự</div>
         <div id="outputTab2" class="output-box">Kết quả từ các bot sẽ hiện ở đây...</div>
+      <div class="actions" id="tab2Actions" style="display:none; margin-top:12px; gap:10px;">
+        <button class="btn-primary" onclick="regenerateActiveTitle()">🔄 Tạo lại tiêu đề này</button>
+        <button class="secondary" onclick="copyOutput('outputTab2')">📋 Copy nội dung</button>
+        <button class="secondary" onclick="downloadOutput('outputTab2','content.txt')">💾 Tải file .txt</button>
+      </div>
       </div>
     </div>
   </div>

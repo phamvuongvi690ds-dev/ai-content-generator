@@ -265,8 +265,7 @@ function showResultTab(idx) {
   renderResultTabs();
   const item = generatedResultsByTitle[idx];
   setOutput('outputTab2', item ? item.content : '');
-  const regBtn = document.getElementById('regenerateBtn');
-  if (regBtn) regBtn.style.display = (generatedResultsByTitle.length > 0) ? 'inline-flex' : 'none';
+  document.getElementById('tab2Actions').style.display = (item && !item.content.includes('Đang')) ? 'flex' : 'none';
 }
 
 async function regenerateActiveTitle() {
@@ -275,9 +274,7 @@ async function regenerateActiveTitle() {
   const item = generatedResultsByTitle[activeResultIndex];
   if (!item) return;
 
-  const btn = document.getElementById('regenerateBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Đang tạo lại...';
+  document.getElementById('tab2Actions').style.display = 'none';
   
   item.content = 'Đang tạo lại nội dung...';
   setOutput('outputTab2', item.content);
@@ -327,8 +324,10 @@ async function generateContent() {
     generatedResultsByTitle[titleIndex].content = content;
     allResults.push(content);
     renderResultTabs();
-    if (activeResultIndex === titleIndex) setOutput('outputTab2', content);
-    document.getElementById('regenerateBtn').style.display = 'inline-flex';
+    if (activeResultIndex === titleIndex) {
+      setOutput('outputTab2', content);
+      document.getElementById('tab2Actions').style.display = 'flex';
+    }
   }
 
   // Nếu người dùng bấm tải/copy khi không chọn tab, vẫn giữ tab đang xem; data tất cả nằm trong generatedResultsByTitle.
