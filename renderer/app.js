@@ -253,8 +253,8 @@ function renderResultTabs() {
   wrap.innerHTML = '';
   generatedResultsByTitle.forEach((item, idx) => {
     const btn = document.createElement('button');
-    btn.className = 'result-tab' + (idx === activeResultIndex ? ' active' : '');
-    btn.textContent = `${idx + 1}. ${item.title.slice(0, 34)}${item.title.length > 34 ? '...' : ''}`;
+    btn.className = 'result-item-btn' + (idx === activeResultIndex ? ' active' : '');
+    btn.innerHTML = `<span class="item-num">${idx + 1}</span> ${item.title}`;
     btn.onclick = () => showResultTab(idx);
     wrap.appendChild(btn);
   });

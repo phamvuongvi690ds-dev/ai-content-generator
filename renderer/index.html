@@ -29,6 +29,14 @@
     .result-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
     .result-tab { background:#0f172a; color:#cbd5e1; border:1px solid #334155; padding:8px 12px; border-radius:999px; cursor:pointer; font-size:13px; font-weight:800; }
     .result-tab.active { background:#2563eb; color:white; border-color:#60a5fa; }
+    .results-container { display: flex; gap: 20px; margin-top: 20px; min-height: 500px; }
+    .results-sidebar { width: 280px; flex-shrink: 0; background: rgba(30,41,59,.5); border-radius: 12px; padding: 15px; border: 1px solid #334155; overflow-y: auto; max-height: 700px; }
+    .results-main { flex: 1; display: flex; flex-direction: column; }
+    .result-item-btn { width: 100%; text-align: left; background: #0f172a; border: 1px solid #334155; color: #cbd5e1; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .result-item-btn:hover { background: #1e293b; border-color: #475569; }
+    .result-item-btn.active { background: #2563eb; color: white; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+    .result-item-btn .item-num { font-weight: 800; margin-right: 8px; opacity: 0.7; }
+
     .range-group { display: flex; gap: 10px; align-items: center; }
     .range-group input { width: 100px; }
     .api-options { display: flex; gap: 15px; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
@@ -173,15 +181,19 @@ Title 3..."></textarea>
         <button class="secondary" onclick="downloadOutput('outputTab2','multi-bot-content.txt')">Tải file .txt</button>
       </div>
 
-      <div id="resultTabs" class="result-tabs"></div>
-      <div class="output-wrap">
+      <div class="results-container">
+        <div id="resultTabs" class="results-sidebar"></div>
+        <div class="results-main">
+          <div class="output-wrap">
         <div class="char-counter" id="counterTab2">0 ký tự</div>
         <div id="outputTab2" class="output-box">Kết quả từ các bot sẽ hiện ở đây...</div>
-      <div class="actions" id="tab2Actions" style="display:none; margin-top:12px; gap:10px;">
+          <div class="actions" id="tab2Actions" style="display:none; margin-top:12px; gap:10px;">
         <button class="btn-primary" onclick="regenerateActiveTitle()">🔄 Tạo lại tiêu đề này</button>
         <button class="secondary" onclick="copyOutput('outputTab2')">📋 Copy nội dung</button>
         <button class="secondary" onclick="downloadOutput('outputTab2','content.txt')">💾 Tải file .txt</button>
       </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -210,6 +222,8 @@ Title 3..."></textarea>
       <div class="output-wrap">
         <div class="char-counter" id="counterTab3">0 ký tự</div>
         <div id="outputTab3" class="output-box">Nội dung mới sẽ hiện ở đây...</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
