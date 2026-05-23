@@ -5,11 +5,11 @@
   <title>AI Content Generator Pro</title>
   <style>
     :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --accent: #3b82f6; --border: #334155; }
-    body { font-family: Inter, -apple-system, system-ui, sans-serif; background: #0b1120; color: var(--text); margin: 0; display: flex; height: 100vh; overflow:hidden; }
-    .tabs { width: 250px; background: #0f172a; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 12px; gap: 8px; box-sizing:border-box; }
-    .tab { padding: 13px 16px; cursor: pointer; border-radius: 12px; border-left: 3px solid transparent; transition: 0.2s; font-weight: 600; color:#94a3b8; }
+    body { font-family: Inter, -apple-system, system-ui, sans-serif; background: #0b1120; color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow:hidden; }
+    .tabs { height: 70px; width: 100%; background: #0f172a; border-bottom: 1px solid var(--border); display: flex; flex-direction: row; align-items: center; padding: 0 20px; gap: 12px; box-sizing:border-box; flex-shrink: 0; }
+    .tab { padding: 8px 18px; height: 40px; display: flex; align-items: center; cursor: pointer; border-radius: 10px; border-bottom: 3px solid transparent; transition: 0.2s; font-weight: 700; color:#94a3b8; white-space: nowrap; }
     .tab:hover { background: #1e293b; color:#fff; }
-    .tab.active { background:#172554; border-left-color: var(--accent); color:#dbeafe; }
+    .tab.active { background:#1e293b; border-bottom-color: var(--accent); border-left-color: transparent; color:#fff; }
     .content-area { flex: 1; padding: 26px; overflow-y: auto; background: radial-gradient(circle at top left,#172554 0,#0b1120 35%); position: relative; z-index: 1; }
     .tab-content { display: none; max-width: 1000px; margin: 0 auto; }
     .tab-content.active { display: block; }
@@ -49,7 +49,7 @@
 </head>
 <body>
 
-<div class="tabs"><div style="font-size:20px;font-weight:800;color:#fff;padding:8px 12px 18px">AI Content Pro</div>
+<div class="tabs"><div style="font-size:18px;font-weight:900;color:#fff;margin-right:30px;letter-spacing:-0.5px">AI CONTENT PRO</div>
   <div class="tab active" onclick="showTab(1)">Tab 1: Quản lý Chatbot</div>
   <div class="tab" onclick="showTab(2)">Tab 2: Sáng tạo đa Bot</div>
   <div class="tab" onclick="showTab(3)">Tab 3: Viết lại</div>
