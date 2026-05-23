@@ -274,9 +274,9 @@ function showResultTab(idx) {
   const item = generatedResultsByTitle[idx];
   if (!item) return;
   // Split content if it contains double newlines (multiple bots) or just repeat
-  const parts = (item.content || '').split('\n\n').filter(Boolean);
+  const parts = (item.content || '').split('\n\n');
   for(let i=0; i<4; i++) {
-    setGridOutput(i, parts[i] || (parts.length > 0 ? parts[0] : ''));
+    setGridOutput(i, parts[i] || '');
   }
 }
 
@@ -415,7 +415,10 @@ async function regenerateGrid(gridIdx) {
   const data = await window.api.callApi({ bot, prompt });
   const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
   
-  // Update internal state (this is tricky as we now have 4 variants per title?)
-  // For now let's just update the grid view.
+  // Update the specific variant in the stored content
+  const parts = (item.content || '').split('\n\n');
+  while(parts.length < 4) parts.push('');
+  parts[gridIdx] = result;
+  item.content = parts.join('\n\n');
   setGridOutput(gridIdx, result);
 }
