@@ -191,26 +191,34 @@ function renderBots() {
     return;
   }
 
+  
   config.bots.forEach((bot, index) => {
     const div = document.createElement('div');
     div.className = 'bot-item';
     div.innerHTML = `<div><b>${bot.name}</b><br><small>${bot.apiType || 'gateway'} · ${bot.model || ''} · ${(bot.apiKeys || []).length || (bot.apiType === 'vertex' ? 'OAuth' : 0)} key</small></div><div><button onclick="editBot(${index})" class="secondary">Sửa</button> <button onclick="deleteBot(${index})" style="background:#ef4444">Xóa</button></div>`;
     list.appendChild(div);
 
-    const label = document.createElement('label');
-    label.className = 'check-item';
-    label.innerHTML = `<input type="checkbox" class="multiBotCheck" value="${index}"> ${bot.name} <small>(${bot.apiType} · ${bot.model})</small>`;
-    multi.appendChild(label);
+    // Populate the 4 grid selects
+    for(let i=0; i<4; i++) {
+      const sBox = document.getElementById(`botSelect_${i}`);
+      if(sBox) {
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.textContent = bot.name;
+        sBox.appendChild(opt);
+      }
+    }
 
     const opt = document.createElement('option');
     opt.value = index;
     opt.textContent = `${bot.name} (${bot.apiType} · ${bot.model})`;
     rewriteSelect.appendChild(opt);
   });
+
 }
 
 function selectedBotIndexes() {
-  return Array.from(document.querySelectorAll('.multiBotCheck:checked')).map(i => Number(i.value));
+  return [0, 1, 2, 3].map(i => Number(document.getElementById(`botSelect_${i}`).value));
 }
 
 function extractText(data) {
@@ -314,8 +322,9 @@ async function generateContent() {
   const allResults = [];
   for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
     const title = titles[titleIndex];
-    const perTitleTasks = indexes.map(async idx => {
-      const bot = config.bots[idx];
+    const perTitleTasks = [0, 1, 2, 3].map(async gridIdx => {
+      const botIdx = Number(document.getElementById(`botSelect_${gridIdx}`).value);
+      const bot = config.bots[botIdx];
       const targetChars = Number(document.getElementById('maxChars').value || 1000);
       const prompt = `Create ONE complete content piece based on this title:\nTitle: ${title}\nRequired length: EXACTLY ${targetChars} characters, not less and not more. The minimum field is only a reference; the final output must match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
       const data = await window.api.callApi({ bot, prompt });
@@ -398,7 +407,7 @@ async function regenerateGrid(gridIdx) {
   if (!item) return;
 
   setGridOutput(gridIdx, 'Đang tạo lại...');
-  const botIdx = indexes[gridIdx % indexes.length];
+  const botIdx = Number(document.getElementById(`botSelect_${gridIdx}`).value);
   const bot = config.bots[botIdx];
   const targetChars = Number(document.getElementById('maxChars').value || 1000);
   const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
