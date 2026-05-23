@@ -36,7 +36,6 @@ const MODEL_OPTIONS = {
 
 window.onload = async () => {
   config = await window.api.getConfig();
-  // Migrate old global config into defaults if needed
   config.bots = config.bots || [];
   toggleBotApiInputs();
   updateModelOptions();
@@ -46,24 +45,18 @@ window.onload = async () => {
 };
 
 function showTab(n) {
-  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
+  const tabButtons = Array.from(document.querySelectorAll('.tab'));
   const targetButton = tabButtons[n - 1];
   const targetContent = document.getElementById(`tab${n}`);
   if (targetButton) targetButton.classList.add('active');
   if (targetContent) targetContent.classList.add('active');
-  const titles = {
-    1: ['Cấu hình Chatbot', 'Quản lý và thiết lập các trợ lý AI'],
-    2: ['Sáng tạo nội dung', 'Tạo nội dung hàng loạt theo nhiều tiêu đề'],
-    3: ['Viết lại nội dung', 'Tối ưu và viết lại văn bản bằng AI']
-  };
-  document.getElementById('pageTitle').textContent = titles[n]?.[0] || '';
-  document.getElementById('pageSub').textContent = titles[n]?.[1] || '';
 }
 
 function currentBotApiType() {
-  const checked = document.querySelector('input[name="botApiType"]:checked'); return checked ? checked.value : 'gateway';
+  const checked = document.querySelector('input[name="botApiType"]:checked');
+  return checked ? checked.value : 'gateway';
 }
 
 function updateModelOptions(selectedValue = '') {
@@ -81,7 +74,7 @@ function updateModelOptions(selectedValue = '') {
   if (selectedValue && !options.some(m => m.value === selectedValue)) {
     const custom = document.createElement('option');
     custom.value = selectedValue;
-    custom.textContent = `Custom/current: ${selectedValue}`;
+    custom.textContent = `Custom: ${selectedValue}`;
     select.appendChild(custom);
   }
   select.value = selectedValue || options[0].value;
@@ -108,7 +101,7 @@ function getBotFromForm() {
     name: document.getElementById('botName').value.trim(),
     apiType,
     outputLanguage: document.getElementById('botOutputLanguage').value || 'en',
-    model: document.getElementById('botModel').value || 'gemini-2.5-flash',
+    model: document.getElementById('botModel').value || 'gemini-3.5-flash',
     systemInstruction: document.getElementById('systemInstruction').value.trim(),
     baseUrl: document.getElementById('botBaseUrl').value.trim(),
     geminiBaseUrl: document.getElementById('botGeminiBaseUrl').value.trim() || 'https://generativelanguage.googleapis.com',
@@ -121,7 +114,7 @@ function getBotFromForm() {
 
 async function addBot() {
   const bot = getBotFromForm();
-  if (!bot.name || !bot.systemInstruction) return alert('Nhập tên bot và system instruction.');
+  if (!bot.name || !bot.systemInstruction) return alert('Nhập tên bot và hướng dẫn AI.');
   if (bot.apiType !== 'vertex' && bot.apiKeys.length === 0) return alert('Nhập ít nhất 1 API key.');
   if (editingIndex >= 0) config.bots[editingIndex] = bot;
   else {
@@ -129,7 +122,7 @@ async function addBot() {
     if (existingIndex >= 0) config.bots[existingIndex] = bot;
     else config.bots.push(bot);
   }
-  console.log('Saving config:', config); await window.api.saveConfig(config);
+  await window.api.saveConfig(config);
   clearBotForm();
   renderBots();
 }
@@ -152,19 +145,20 @@ function clearBotForm() {
 async function deleteBot(index) {
   if (!confirm('Xóa chatbot này?')) return;
   config.bots.splice(index, 1);
-  console.log('Saving config:', config); await window.api.saveConfig(config);
+  await window.api.saveConfig(config);
   renderBots();
 }
 
 function editBot(index) {
-  const bot = config.bots[index];
   editingIndex = index;
-  document.querySelector(`input[name="botApiType"][value="${bot.apiType || 'gateway'}"]`).checked = true;
+  const bot = config.bots[index];
+  document.getElementById('botName').value = bot.name;
+  const radios = document.querySelectorAll('input[name="botApiType"]');
+  radios.forEach(r => { if (r.value === bot.apiType) r.checked = true; });
   toggleBotApiInputs();
+  document.getElementById('botModel').value = bot.model;
   document.getElementById('botOutputLanguage').value = bot.outputLanguage || 'en';
-  document.getElementById('botName').value = bot.name || '';
-  updateModelOptions(bot.model || 'gemini-2.5-flash');
-  document.getElementById('systemInstruction').value = bot.systemInstruction || '';
+  document.getElementById('systemInstruction').value = bot.systemInstruction;
   document.getElementById('botBaseUrl').value = bot.baseUrl || '';
   document.getElementById('botGeminiBaseUrl').value = bot.geminiBaseUrl || 'https://generativelanguage.googleapis.com';
   document.getElementById('botOpenAIBaseUrl').value = bot.openaiBaseUrl || 'https://api.openai.com';
@@ -179,48 +173,37 @@ function editBot(index) {
 
 function renderBots() {
   const list = document.getElementById('botList');
-  const multi = document.getElementById('multiBotList');
   const rewriteSelect = document.getElementById('selectBotTab3');
   const botSelectMain = document.getElementById('botSelectMain');
   list.innerHTML = '';
-  if(multi) multi.innerHTML = '';
   if(rewriteSelect) rewriteSelect.innerHTML = '';
   if(botSelectMain) botSelectMain.innerHTML = '';
 
   if (!config.bots.length) {
     list.innerHTML = '<p style="color:#94a3b8">Chưa có chatbot nào.</p>';
-    if(multi) multi.innerHTML = '<p style="color:#94a3b8">Chưa có chatbot nào.</p>';
     return;
   }
 
-  
-  
   config.bots.forEach((bot, index) => {
     const div = document.createElement('div');
     div.className = 'bot-item';
-    div.innerHTML = `<div><b>${bot.name}</b><br><small>${bot.apiType || 'gateway'} · ${bot.model || ''} · ${(bot.apiKeys || []).length || (bot.apiType === 'vertex' ? 'OAuth' : 0)} key</small></div><div><button onclick="editBot(${index})" class="secondary">Sửa</button> <button onclick="deleteBot(${index})" style="background:#ef4444">Xóa</button></div>`;
+    div.innerHTML = `<div><b>${bot.name}</b><br><small>${bot.apiType || 'gateway'} · ${bot.model || ''}</small></div><div><button onclick="editBot(${index})" class="secondary">Sửa</button> <button onclick="deleteBot(${index})" style="background:#ef4444">Xóa</button></div>`;
     list.appendChild(div);
 
-    const sBox = document.getElementById('botSelectMain');
-    if(sBox) {
+    if(botSelectMain) {
       const opt = document.createElement('option');
       opt.value = index;
       opt.textContent = bot.name;
-      sBox.appendChild(opt);
+      botSelectMain.appendChild(opt);
     }
 
-    const opt = document.createElement('option');
-    opt.value = index;
-    opt.textContent = `${bot.name} (${bot.apiType} · ${bot.model})`;
-    rewriteSelect.appendChild(opt);
+    if(rewriteSelect) {
+      const opt = document.createElement('option');
+      opt.value = index;
+      opt.textContent = `${bot.name} (${bot.apiType} · ${bot.model})`;
+      rewriteSelect.appendChild(opt);
+    }
   });
-
-
-}
-
-function selectedBotIndexes() {
-  const main = document.getElementById('botSelectMain');
-  return main ? [Number(main.value)] : [];
 }
 
 function extractText(data) {
@@ -232,16 +215,6 @@ function setOutput(id, text) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = text || '';
-  const counterId = id === 'outputTab2' ? 'counterTab2' : (id === 'outputTab3' ? 'counterTab3' : null);
-  if (counterId) {
-    const counter = document.getElementById(counterId);
-    const count = (text || '').length;
-    if (counter) counter.textContent = `Bộ đếm: ${count.toLocaleString('vi-VN')} ký tự`;
-  }
-}
-
-function languageName(bot) {
-  return bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
 }
 
 function normalizeExactLength(text, targetLen) {
@@ -252,7 +225,9 @@ function normalizeExactLength(text, targetLen) {
   return text;
 }
 
-
+function languageName(bot) {
+  return bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
+}
 
 let generatedResultsByTitle = [];
 let activeResultIndex = 0;
@@ -264,7 +239,7 @@ function renderResultTabs() {
   generatedResultsByTitle.forEach((item, idx) => {
     const btn = document.createElement('button');
     btn.className = 'result-item-btn' + (idx === activeResultIndex ? ' active' : '');
-    btn.innerHTML = `<span class="item-num">${idx + 1}</span> ${item.title}`;
+    btn.innerHTML = '<span class="item-num">' + (idx + 1) + '</span> ' + item.title;
     btn.onclick = () => showResultTab(idx);
     wrap.appendChild(btn);
   });
@@ -273,43 +248,56 @@ function renderResultTabs() {
 function showResultTab(idx) {
   activeResultIndex = idx;
   renderResultTabs();
+  const resultsList = document.getElementById('resultsList');
+  if (!resultsList) return;
+  
+  const cards = resultsList.querySelectorAll('.result-card-full');
+  cards.forEach((card, i) => {
+    card.style.display = (i === idx) ? 'flex' : 'none';
+  });
+  
   const item = generatedResultsByTitle[idx];
-  if (!item) return;
-  // Split content if it contains double newlines (multiple bots) or just repeat
-  const parts = (item.content || '').split('\n\n');
-  for(let i=0; i<4; i++) {
-    setGridOutput(i, parts[i] || '');
+  if (item && !item.content.includes('Đang')) {
+     const outEl = document.getElementById(`output_res_${idx}`);
+     const countEl = document.getElementById(`counter_res_${idx}`);
+     if(outEl) outEl.textContent = item.content;
+     if(countEl) countEl.textContent = `${item.content.length.toLocaleString('vi-VN')} ký tự`;
   }
 }
 
-async function regenerateActiveTitle() {
-  const indexes = selectedBotIndexes();
-  if (!indexes.length) return alert('Chọn chatbot để tạo lại.');
-  const item = generatedResultsByTitle[activeResultIndex];
-  if (!item) return;
-
-  document.getElementById('tab2Actions').style.display = 'none';
-  
-  item.content = 'Đang tạo lại nội dung...';
-  setOutput('outputTab2', item.content);
-
-  const perTitleTasks = indexes.map(async idx => {
-    const bot = config.bots[idx];
-    const targetChars = Number(document.getElementById('maxChars').value || 1000);
-    const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
-    const data = await window.api.callApi({ bot, prompt });
-    if (bot.apiKeys && bot.apiKeys.length) bot.keyIndex = ((bot.keyIndex || 0) + 1) % bot.apiKeys.length;
-    return normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
-  });
-
-  const results = await Promise.all(perTitleTasks);
-  item.content = results.join('\n\n');
-  setOutput('outputTab2', item.content);
-  
-  btn.disabled = false;
-  btn.textContent = '🔄 Tạo lại tab này';
+async function copyResult(idx) {
+  const text = generatedResultsByTitle[idx].content;
+  if (!text || text.includes('Đang')) return;
+  await navigator.clipboard.writeText(text);
+  alert('Đã copy!');
 }
 
+async function downloadResult(idx) {
+  const item = generatedResultsByTitle[idx];
+  if (!item.content || item.content.includes('Đang')) return;
+  const saved = await window.api.saveTextFile({ filename: `${item.title.slice(0,20)}.txt`, text: item.content });
+  if (saved) alert('Đã lưu file!');
+}
+
+async function regenerateResult(idx) {
+  const botIdx = document.getElementById('botSelectMain').value;
+  const bot = config.bots[Number(botIdx)];
+  const item = generatedResultsByTitle[idx];
+  
+  const outEl = document.getElementById(`output_res_${idx}`);
+  if(outEl) outEl.textContent = 'Đang tạo lại...';
+  
+  const targetChars = Number(document.getElementById('maxChars').value || 1000);
+  const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
+  
+  const data = await window.api.callApi({ bot, prompt });
+  const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
+  
+  generatedResultsByTitle[idx].content = result;
+  if(outEl) outEl.textContent = result;
+  const countEl = document.getElementById(`counter_res_${idx}`);
+  if(countEl) countEl.textContent = `${result.length.toLocaleString('vi-VN')} ký tự`;
+}
 
 async function generateContent() {
   const botIdx = document.getElementById('botSelectMain').value;
@@ -323,7 +311,6 @@ async function generateContent() {
   
   generatedResultsByTitle = titles.map(t => ({ title: t, content: 'Đang tạo nội dung...' }));
 
-  // Initial render of "loading" cards
   titles.forEach((title, idx) => {
     const card = document.createElement('div');
     card.className = 'result-card-full';
@@ -341,17 +328,16 @@ async function generateContent() {
       </div>
     `;
     resultsList.appendChild(card);
+    card.style.display = 'none';
   });
+
+  renderResultTabs();
+  showResultTab(0);
 
   for (let i = 0; i < titles.length; i++) {
     const title = titles[i];
     const targetChars = Number(document.getElementById('maxChars').value || 1000);
-    const prompt = `Create ONE complete content piece based on this title:
-Title: ${title}
-Required length: EXACTLY ${targetChars} characters. Match the maximum value exactly.
-Writing requirements: ${document.getElementById('requirements').value.trim() || 'None.'}
-Output language: ${languageName(bot)}.
-Return only the final content, no explanation, no title header, no markdown.`;
+    const prompt = `Create ONE complete content piece based on this title:\nTitle: ${title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
     
     const data = await window.api.callApi({ bot, prompt });
     const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
@@ -361,19 +347,20 @@ Return only the final content, no explanation, no title header, no markdown.`;
     if (outEl) outEl.textContent = result;
     const countEl = document.getElementById(`counter_res_${i}`);
     if (countEl) countEl.textContent = `${result.length.toLocaleString('vi-VN')} ký tự`;
+    renderResultTabs();
   }
 }
 
 async function rewriteContent() {
-  const bot = config.bots[Number(document.getElementById('selectBotTab3').value)];
+  const botIdx = document.getElementById('selectBotTab3').value;
+  const bot = config.bots[Number(botIdx)];
   if (!bot) return alert('Chưa có chatbot. Hãy tạo ở Tab 1.');
   const original = document.getElementById('originalContent').value.trim();
   if (!original) return alert('Nhập nội dung gốc.');
   const prompt = `Rewrite the content below with these requirements:\nRewrite requirements: ${document.getElementById('rewriteRequirements').value.trim() || 'Rewrite naturally, clearly, better, and keep the original meaning.'}\nOutput language: ${languageName(bot)}.\n\nOriginal content:\n${original}\n\nReturn only the rewritten content, no explanation.`;
-  const out = document.getElementById('outputTab3');
-  setOutput('outputTab3', 'Đang viết lại...');
   const data = await window.api.callApi({ bot, prompt });
-  setOutput('outputTab3', extractText(data));
+  const out = document.getElementById('outputTab3');
+  if(out) out.textContent = extractText(data);
 }
 
 async function copyOutput(id) {
@@ -396,81 +383,3 @@ document.addEventListener('mousedown', (e) => {
     setTimeout(() => editable.focus(), 0);
   }
 }, false);
-
-
-function setGridOutput(index, text) {
-  const el = document.getElementById(`output_grid_${index}`);
-  if (!el) return;
-  el.textContent = text || '';
-  const counter = document.getElementById(`counter_grid_${index}`);
-  if (counter) counter.textContent = `${(text || '').length.toLocaleString('vi-VN')} ký tự`;
-}
-
-async function copyGrid(index) {
-  const text = document.getElementById(`output_grid_${index}`).textContent || '';
-  if (!text.trim() || text.includes('Đang')) return alert('Chưa có nội dung.');
-  await navigator.clipboard.writeText(text);
-  alert('Đã copy!');
-}
-
-async function downloadGrid(index) {
-  const text = document.getElementById(`output_grid_${index}`).textContent || '';
-  if (!text.trim() || text.includes('Đang')) return alert('Chưa có nội dung.');
-  const saved = await window.api.saveTextFile({ filename: `result-${index+1}.txt`, text });
-  if (saved) alert('Đã lưu file!');
-}
-
-async function regenerateGrid(gridIdx) {
-  const indexes = selectedBotIndexes();
-  if (!indexes.length) return alert('Chọn ít nhất 1 bot.');
-  const item = generatedResultsByTitle[activeResultIndex];
-  if (!item) return;
-
-  setGridOutput(gridIdx, 'Đang tạo lại...');
-  const botIdx = Number(document.getElementById(`botSelect_${gridIdx}`).value);
-  const bot = config.bots[botIdx];
-  const targetChars = Number(document.getElementById('maxChars').value || 1000);
-  const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
-  
-  const data = await window.api.callApi({ bot, prompt });
-  const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
-  
-  // Update the specific variant in the stored content
-  const parts = (item.content || '').split('\n\n');
-  while(parts.length < 4) parts.push('');
-  parts[gridIdx] = result;
-  item.content = parts.join('\n\n');
-  setGridOutput(gridIdx, result);
-}
-
-
-async function copyResult(idx) {
-  const text = generatedResultsByTitle[idx].content;
-  if (!text || text.includes('Đang')) return;
-  await navigator.clipboard.writeText(text);
-  alert('Đã copy!');
-}
-async function downloadResult(idx) {
-  const item = generatedResultsByTitle[idx];
-  if (!item.content || item.content.includes('Đang')) return;
-  const saved = await window.api.saveTextFile({ filename: `${item.title.slice(0,20)}.txt`, text: item.content });
-  if (saved) alert('Đã lưu file!');
-}
-async function regenerateResult(idx) {
-  const botIdx = document.getElementById('botSelectMain').value;
-  const bot = config.bots[Number(botIdx)];
-  const item = generatedResultsByTitle[idx];
-  
-  const outEl = document.getElementById(`output_res_${idx}`);
-  outEl.textContent = 'Đang tạo lại...';
-  
-  const targetChars = Number(document.getElementById('maxChars').value || 1000);
-  const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
-  
-  const data = await window.api.callApi({ bot, prompt });
-  const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
-  
-  generatedResultsByTitle[idx].content = result;
-  outEl.textContent = result;
-  document.getElementById(`counter_res_${idx}`).textContent = `${result.length.toLocaleString('vi-VN')} ký tự`;
-}
