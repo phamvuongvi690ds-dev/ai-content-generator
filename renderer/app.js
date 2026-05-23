@@ -63,7 +63,7 @@ function showTab(n) {
 }
 
 function currentBotApiType() {
-  return document.querySelector('input[name="botApiType"]:checked')?.value || 'gateway';
+  const checked = document.querySelector('input[name="botApiType"]:checked'); return checked ? checked.value : 'gateway';
 }
 
 function updateModelOptions(selectedValue = '') {
@@ -103,7 +103,7 @@ async function pickServiceAccount() {
 
 function getBotFromForm() {
   const apiType = currentBotApiType();
-  const keyBox = apiType === 'gemini' ? 'botApiKeysGemini' : (apiType === 'openai' ? 'botApiKeysOpenAI' : 'botApiKeysGateway');
+  const keyBox = apiType === 'gemini' ? 'botApiKeysGemini' : (apiType === 'openai' ? 'botApiKeysOpenAI' : (apiType === 'gateway' ? 'botApiKeysGateway' : ''));
   return {
     name: document.getElementById('botName').value.trim(),
     apiType,
@@ -122,14 +122,14 @@ function getBotFromForm() {
 async function addBot() {
   const bot = getBotFromForm();
   if (!bot.name || !bot.systemInstruction) return alert('Nhập tên bot và system instruction.');
-  if (bot.apiType !== 'vertex' && !bot.apiKeys.length) return alert('Nhập ít nhất 1 API key cho bot này.');
+  if (bot.apiType !== 'vertex' && bot.apiKeys.length === 0) return alert('Nhập ít nhất 1 API key.');
   if (editingIndex >= 0) config.bots[editingIndex] = bot;
   else {
     const existingIndex = config.bots.findIndex(b => b.name === bot.name);
     if (existingIndex >= 0) config.bots[existingIndex] = bot;
     else config.bots.push(bot);
   }
-  await window.api.saveConfig(config);
+  console.log('Saving config:', config); await window.api.saveConfig(config);
   clearBotForm();
   renderBots();
 }
@@ -152,7 +152,7 @@ function clearBotForm() {
 async function deleteBot(index) {
   if (!confirm('Xóa chatbot này?')) return;
   config.bots.splice(index, 1);
-  await window.api.saveConfig(config);
+  console.log('Saving config:', config); await window.api.saveConfig(config);
   renderBots();
 }
 
