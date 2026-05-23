@@ -40,8 +40,6 @@ window.onload = async () => {
   toggleBotApiInputs();
   updateModelOptions();
   renderBots();
-  setOutput('outputTab2', document.getElementById('outputTab2')?.textContent || '');
-  setOutput('outputTab3', document.getElementById('outputTab3')?.textContent || '');
 };
 
 function showTab(n) {
@@ -215,6 +213,12 @@ function setOutput(id, text) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = text || '';
+  const counterId = id === 'outputTab2' ? 'counterTab2' : (id === 'outputTab3' ? 'counterTab3' : null);
+  if (counterId) {
+    const counter = document.getElementById(counterId);
+    const count = (text || '').length;
+    if (counter) counter.textContent = `${count.toLocaleString('vi-VN')} ký tự`;
+  }
 }
 
 function normalizeExactLength(text, targetLen) {
@@ -248,55 +252,30 @@ function renderResultTabs() {
 function showResultTab(idx) {
   activeResultIndex = idx;
   renderResultTabs();
-  const resultsList = document.getElementById('resultsList');
-  if (!resultsList) return;
-  
-  const cards = resultsList.querySelectorAll('.result-card-full');
-  cards.forEach((card, i) => {
-    card.style.display = (i === idx) ? 'flex' : 'none';
-  });
-  
   const item = generatedResultsByTitle[idx];
-  if (item && !item.content.includes('Đang')) {
-     const outEl = document.getElementById(`output_res_${idx}`);
-     const countEl = document.getElementById(`counter_res_${idx}`);
-     if(outEl) outEl.textContent = item.content;
-     if(countEl) countEl.textContent = `${item.content.length.toLocaleString('vi-VN')} ký tự`;
-  }
+  if (!item) return;
+  
+  document.getElementById('tab2OutputWrap').style.display = 'block';
+  setOutput('outputTab2', item.content);
 }
 
-async function copyResult(idx) {
-  const text = generatedResultsByTitle[idx].content;
-  if (!text || text.includes('Đang')) return;
-  await navigator.clipboard.writeText(text);
-  alert('Đã copy!');
-}
-
-async function downloadResult(idx) {
-  const item = generatedResultsByTitle[idx];
-  if (!item.content || item.content.includes('Đang')) return;
-  const saved = await window.api.saveTextFile({ filename: `${item.title.slice(0,20)}.txt`, text: item.content });
-  if (saved) alert('Đã lưu file!');
-}
-
-async function regenerateResult(idx) {
+async function regenerateActiveTitle() {
   const botIdx = document.getElementById('botSelectMain').value;
+  if (botIdx === '') return alert('Chọn chatbot.');
   const bot = config.bots[Number(botIdx)];
-  const item = generatedResultsByTitle[idx];
-  
-  const outEl = document.getElementById(`output_res_${idx}`);
-  if(outEl) outEl.textContent = 'Đang tạo lại...';
-  
+  const item = generatedResultsByTitle[activeResultIndex];
+  if (!item) return;
+
+  setOutput('outputTab2', 'Đang tạo lại nội dung...');
+
   const targetChars = Number(document.getElementById('maxChars').value || 1000);
   const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
   
   const data = await window.api.callApi({ bot, prompt });
   const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
   
-  generatedResultsByTitle[idx].content = result;
-  if(outEl) outEl.textContent = result;
-  const countEl = document.getElementById(`counter_res_${idx}`);
-  if(countEl) countEl.textContent = `${result.length.toLocaleString('vi-VN')} ký tự`;
+  item.content = result;
+  setOutput('outputTab2', result);
 }
 
 async function generateContent() {
@@ -306,31 +285,7 @@ async function generateContent() {
   const titles = document.getElementById('topic').value.split(/\n+/).map(t => t.trim()).filter(Boolean);
   if (!titles.length) return alert('Nhập danh sách tiêu đề.');
 
-  const resultsList = document.getElementById('resultsList');
-  resultsList.innerHTML = '';
-  
   generatedResultsByTitle = titles.map(t => ({ title: t, content: 'Đang tạo nội dung...' }));
-
-  titles.forEach((title, idx) => {
-    const card = document.createElement('div');
-    card.className = 'result-card-full';
-    card.id = `result_card_${idx}`;
-    card.innerHTML = `
-      <div class="result-card-header">
-        <span class="result-card-title">${idx + 1}. ${title}</span>
-        <span class="char-counter-mini" id="counter_res_${idx}">0 ký tự</span>
-      </div>
-      <div id="output_res_${idx}" class="result-card-body">Đang tạo...</div>
-      <div class="result-card-footer">
-        <button class="secondary" onclick="copyResult(${idx})">📋 Copy</button>
-        <button class="secondary" onclick="downloadResult(${idx})">💾 Tải .txt</button>
-        <button class="btn-primary" onclick="regenerateResult(${idx})">🔄 Tạo lại</button>
-      </div>
-    `;
-    resultsList.appendChild(card);
-    card.style.display = 'none';
-  });
-
   renderResultTabs();
   showResultTab(0);
 
@@ -343,10 +298,7 @@ async function generateContent() {
     const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
     
     generatedResultsByTitle[i].content = result;
-    const outEl = document.getElementById(`output_res_${i}`);
-    if (outEl) outEl.textContent = result;
-    const countEl = document.getElementById(`counter_res_${i}`);
-    if (countEl) countEl.textContent = `${result.length.toLocaleString('vi-VN')} ký tự`;
+    if (activeResultIndex === i) setOutput('outputTab2', result);
     renderResultTabs();
   }
 }
@@ -358,23 +310,23 @@ async function rewriteContent() {
   const original = document.getElementById('originalContent').value.trim();
   if (!original) return alert('Nhập nội dung gốc.');
   const prompt = `Rewrite the content below with these requirements:\nRewrite requirements: ${document.getElementById('rewriteRequirements').value.trim() || 'Rewrite naturally, clearly, better, and keep the original meaning.'}\nOutput language: ${languageName(bot)}.\n\nOriginal content:\n${original}\n\nReturn only the rewritten content, no explanation.`;
+  setOutput('outputTab3', 'Đang viết lại...');
   const data = await window.api.callApi({ bot, prompt });
-  const out = document.getElementById('outputTab3');
-  if(out) out.textContent = extractText(data);
+  setOutput('outputTab3', extractText(data));
 }
 
 async function copyOutput(id) {
   const text = document.getElementById(id).textContent || '';
-  if (!text.trim()) return alert('Chưa có nội dung để copy.');
+  if (!text.trim() || text.includes('Đang')) return alert('Chưa có nội dung.');
   await navigator.clipboard.writeText(text);
-  alert('Đã copy nội dung.');
+  alert('Đã copy!');
 }
 
 async function downloadOutput(id, filename) {
   const text = document.getElementById(id).textContent || '';
-  if (!text.trim()) return alert('Chưa có nội dung để tải.');
+  if (!text.trim() || text.includes('Đang')) return alert('Chưa có nội dung.');
   const saved = await window.api.saveTextFile({ filename, text });
-  if (saved) alert('Đã lưu file: ' + saved);
+  if (saved) alert('Đã lưu file!');
 }
 
 document.addEventListener('mousedown', (e) => {
