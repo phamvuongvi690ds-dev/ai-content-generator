@@ -181,13 +181,15 @@ function renderBots() {
   const list = document.getElementById('botList');
   const multi = document.getElementById('multiBotList');
   const rewriteSelect = document.getElementById('selectBotTab3');
+  const botSelectMain = document.getElementById('botSelectMain');
   list.innerHTML = '';
-  multi.innerHTML = '';
-  rewriteSelect.innerHTML = '';
+  if(multi) multi.innerHTML = '';
+  if(rewriteSelect) rewriteSelect.innerHTML = '';
+  if(botSelectMain) botSelectMain.innerHTML = '';
 
   if (!config.bots.length) {
     list.innerHTML = '<p style="color:#94a3b8">Chưa có chatbot nào.</p>';
-    multi.innerHTML = '<p style="color:#94a3b8">Chưa có chatbot nào.</p>';
+    if(multi) multi.innerHTML = '<p style="color:#94a3b8">Chưa có chatbot nào.</p>';
     return;
   }
 
@@ -217,7 +219,8 @@ function renderBots() {
 }
 
 function selectedBotIndexes() {
-  return [0, 1, 2, 3].map(i => Number(document.getElementById(`botSelect_${i}`).value));
+  const main = document.getElementById('botSelectMain');
+  return main ? [Number(main.value)] : [];
 }
 
 function extractText(data) {
