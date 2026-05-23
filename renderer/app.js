@@ -264,8 +264,12 @@ function showResultTab(idx) {
   activeResultIndex = idx;
   renderResultTabs();
   const item = generatedResultsByTitle[idx];
-  setOutput('outputTab2', item ? item.content : '');
-  document.getElementById('tab2Actions').style.display = (item && !item.content.includes('Đang')) ? 'flex' : 'none';
+  if (!item) return;
+  // Split content if it contains double newlines (multiple bots) or just repeat
+  const parts = (item.content || '').split('\n\n').filter(Boolean);
+  for(let i=0; i<4; i++) {
+    setGridOutput(i, parts[i] || (parts.length > 0 ? parts[0] : ''));
+  }
 }
 
 async function regenerateActiveTitle() {
@@ -322,12 +326,8 @@ async function generateContent() {
     const results = await Promise.all(perTitleTasks);
     const content = results.join('\n\n');
     generatedResultsByTitle[titleIndex].content = content;
-    allResults.push(content);
     renderResultTabs();
-    if (activeResultIndex === titleIndex) {
-      setOutput('outputTab2', content);
-      document.getElementById('tab2Actions').style.display = 'flex';
-    }
+    if (activeResultIndex === titleIndex) showResultTab(titleIndex);
   }
 
   // Nếu người dùng bấm tải/copy khi không chọn tab, vẫn giữ tab đang xem; data tất cả nằm trong generatedResultsByTitle.
@@ -367,3 +367,46 @@ document.addEventListener('mousedown', (e) => {
     setTimeout(() => editable.focus(), 0);
   }
 }, false);
+
+
+function setGridOutput(index, text) {
+  const el = document.getElementById(`output_grid_${index}`);
+  if (!el) return;
+  el.textContent = text || '';
+  const counter = document.getElementById(`counter_grid_${index}`);
+  if (counter) counter.textContent = `${(text || '').length.toLocaleString('vi-VN')} ký tự`;
+}
+
+async function copyGrid(index) {
+  const text = document.getElementById(`output_grid_${index}`).textContent || '';
+  if (!text.trim() || text.includes('Đang')) return alert('Chưa có nội dung.');
+  await navigator.clipboard.writeText(text);
+  alert('Đã copy!');
+}
+
+async function downloadGrid(index) {
+  const text = document.getElementById(`output_grid_${index}`).textContent || '';
+  if (!text.trim() || text.includes('Đang')) return alert('Chưa có nội dung.');
+  const saved = await window.api.saveTextFile({ filename: `result-${index+1}.txt`, text });
+  if (saved) alert('Đã lưu file!');
+}
+
+async function regenerateGrid(gridIdx) {
+  const indexes = selectedBotIndexes();
+  if (!indexes.length) return alert('Chọn ít nhất 1 bot.');
+  const item = generatedResultsByTitle[activeResultIndex];
+  if (!item) return;
+
+  setGridOutput(gridIdx, 'Đang tạo lại...');
+  const botIdx = indexes[gridIdx % indexes.length];
+  const bot = config.bots[botIdx];
+  const targetChars = Number(document.getElementById('maxChars').value || 1000);
+  const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
+  
+  const data = await window.api.callApi({ bot, prompt });
+  const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
+  
+  // Update internal state (this is tricky as we now have 4 variants per title?)
+  // For now let's just update the grid view.
+  setGridOutput(gridIdx, result);
+}

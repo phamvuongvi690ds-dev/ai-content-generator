@@ -45,6 +45,15 @@
     .multi-bot-select { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; max-height: 200px; overflow-y: auto; }
     .check-item { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
     .check-item input { width: auto; }
+    .prompt-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 15px; flex: 1; min-height: 600px; }
+    .prompt-card { background: #020617; border: 1px solid var(--accent); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    .prompt-card-header { background: #1e293b; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+    .prompt-card-title { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+    .prompt-card-body { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap; color: #e2e8f0; }
+    .prompt-card-footer { padding: 8px; display: flex; gap: 8px; background: rgba(15,23,42,0.5); border-top: 1px solid #334155; }
+    .prompt-card-footer button { padding: 5px 10px; font-size: 11px; }
+    .prompt-card .char-counter-mini { font-size: 10px; font-weight: 900; color: #38bdf8; }
+
   </style>
 </head>
 <body>
@@ -182,15 +191,62 @@ Title 3..."></textarea>
       <div class="results-container">
         <div id="resultTabs" class="results-sidebar"></div>
         <div class="results-main">
-          <div class="output-wrap">
-        <div class="char-counter" id="counterTab2">0 ký tự</div>
-        <div id="outputTab2" class="output-box">Kết quả từ các bot sẽ hiện ở đây...</div>
-          <div class="actions" id="tab2Actions" style="display:none; margin-top:12px; gap:10px;">
-        <button class="btn-primary" onclick="regenerateActiveTitle()">🔄 Tạo lại tiêu đề này</button>
-        <button class="secondary" onclick="copyOutput('outputTab2')">📋 Copy nội dung</button>
-        <button class="secondary" onclick="downloadOutput('outputTab2','content.txt')">💾 Tải file .txt</button>
-      </div>
+
+          <div class="prompt-grid">
+            <!-- Card 1 -->
+            <div class="prompt-card">
+              <div class="prompt-card-header">
+                <span class="prompt-card-title">Kết quả 1</span>
+                <span class="char-counter-mini" id="counter_grid_0">0 ký tự</span>
+              </div>
+              <div id="output_grid_0" class="prompt-card-body">Trống...</div>
+              <div class="prompt-card-footer">
+                <button class="secondary" onclick="copyGrid(0)">📋 Copy</button>
+                <button class="secondary" onclick="downloadGrid(0)">💾 Tải .txt</button>
+                <button class="btn-primary" onclick="regenerateGrid(0)">🔄 Tạo lại</button>
+              </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="prompt-card">
+              <div class="prompt-card-header">
+                <span class="prompt-card-title">Kết quả 2</span>
+                <span class="char-counter-mini" id="counter_grid_1">0 ký tự</span>
+              </div>
+              <div id="output_grid_1" class="prompt-card-body">Trống...</div>
+              <div class="prompt-card-footer">
+                <button class="secondary" onclick="copyGrid(1)">📋 Copy</button>
+                <button class="secondary" onclick="downloadGrid(1)">💾 Tải .txt</button>
+                <button class="btn-primary" onclick="regenerateGrid(1)">🔄 Tạo lại</button>
+              </div>
+            </div>
+            <!-- Card 3 -->
+            <div class="prompt-card">
+              <div class="prompt-card-header">
+                <span class="prompt-card-title">Kết quả 3</span>
+                <span class="char-counter-mini" id="counter_grid_2">0 ký tự</span>
+              </div>
+              <div id="output_grid_2" class="prompt-card-body">Trống...</div>
+              <div class="prompt-card-footer">
+                <button class="secondary" onclick="copyGrid(2)">📋 Copy</button>
+                <button class="secondary" onclick="downloadGrid(2)">💾 Tải .txt</button>
+                <button class="btn-primary" onclick="regenerateGrid(2)">🔄 Tạo lại</button>
+              </div>
+            </div>
+            <!-- Card 4 -->
+            <div class="prompt-card">
+              <div class="prompt-card-header">
+                <span class="prompt-card-title">Kết quả 4</span>
+                <span class="char-counter-mini" id="counter_grid_3">0 ký tự</span>
+              </div>
+              <div id="output_grid_3" class="prompt-card-body">Trống...</div>
+              <div class="prompt-card-footer">
+                <button class="secondary" onclick="copyGrid(3)">📋 Copy</button>
+                <button class="secondary" onclick="downloadGrid(3)">💾 Tải .txt</button>
+                <button class="btn-primary" onclick="regenerateGrid(3)">🔄 Tạo lại</button>
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
     </div>
