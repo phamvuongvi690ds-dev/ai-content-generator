@@ -192,21 +192,19 @@ function renderBots() {
   }
 
   
+  
   config.bots.forEach((bot, index) => {
     const div = document.createElement('div');
     div.className = 'bot-item';
     div.innerHTML = `<div><b>${bot.name}</b><br><small>${bot.apiType || 'gateway'} · ${bot.model || ''} · ${(bot.apiKeys || []).length || (bot.apiType === 'vertex' ? 'OAuth' : 0)} key</small></div><div><button onclick="editBot(${index})" class="secondary">Sửa</button> <button onclick="deleteBot(${index})" style="background:#ef4444">Xóa</button></div>`;
     list.appendChild(div);
 
-    // Populate the 4 grid selects
-    for(let i=0; i<4; i++) {
-      const sBox = document.getElementById(`botSelect_${i}`);
-      if(sBox) {
-        const opt = document.createElement('option');
-        opt.value = index;
-        opt.textContent = bot.name;
-        sBox.appendChild(opt);
-      }
+    const sBox = document.getElementById('botSelectMain');
+    if(sBox) {
+      const opt = document.createElement('option');
+      opt.value = index;
+      opt.textContent = bot.name;
+      sBox.appendChild(opt);
     }
 
     const opt = document.createElement('option');
@@ -214,6 +212,7 @@ function renderBots() {
     opt.textContent = `${bot.name} (${bot.apiType} · ${bot.model})`;
     rewriteSelect.appendChild(opt);
   });
+
 
 }
 
@@ -308,41 +307,59 @@ async function regenerateActiveTitle() {
   btn.textContent = '🔄 Tạo lại tab này';
 }
 
+
 async function generateContent() {
-  const indexes = selectedBotIndexes();
-  if (!indexes.length) return alert('Chọn ít nhất 1 chatbot để chạy.');
+  const botIdx = document.getElementById('botSelectMain').value;
+  if (botIdx === '') return alert('Chọn chatbot.');
+  const bot = config.bots[Number(botIdx)];
   const titles = document.getElementById('topic').value.split(/\n+/).map(t => t.trim()).filter(Boolean);
-  if (!titles.length) return alert('Nhập ít nhất 1 tiêu đề.');
+  if (!titles.length) return alert('Nhập danh sách tiêu đề.');
 
+  const resultsList = document.getElementById('resultsList');
+  resultsList.innerHTML = '';
+  
   generatedResultsByTitle = titles.map(t => ({ title: t, content: 'Đang tạo nội dung...' }));
-  activeResultIndex = 0;
-  renderResultTabs();
-  showResultTab(0);
 
-  const allResults = [];
-  for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
-    const title = titles[titleIndex];
-    const perTitleTasks = [0, 1, 2, 3].map(async gridIdx => {
-      const botIdx = Number(document.getElementById(`botSelect_${gridIdx}`).value);
-      const bot = config.bots[botIdx];
-      const targetChars = Number(document.getElementById('maxChars').value || 1000);
-      const prompt = `Create ONE complete content piece based on this title:\nTitle: ${title}\nRequired length: EXACTLY ${targetChars} characters, not less and not more. The minimum field is only a reference; the final output must match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
-      const data = await window.api.callApi({ bot, prompt });
-      if (bot.apiKeys && bot.apiKeys.length) bot.keyIndex = ((bot.keyIndex || 0) + 1) % bot.apiKeys.length;
-      return normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
-    });
+  // Initial render of "loading" cards
+  titles.forEach((title, idx) => {
+    const card = document.createElement('div');
+    card.className = 'result-card-full';
+    card.id = `result_card_${idx}`;
+    card.innerHTML = `
+      <div class="result-card-header">
+        <span class="result-card-title">${idx + 1}. ${title}</span>
+        <span class="char-counter-mini" id="counter_res_${idx}">0 ký tự</span>
+      </div>
+      <div id="output_res_${idx}" class="result-card-body">Đang tạo...</div>
+      <div class="result-card-footer">
+        <button class="secondary" onclick="copyResult(${idx})">📋 Copy</button>
+        <button class="secondary" onclick="downloadResult(${idx})">💾 Tải .txt</button>
+        <button class="btn-primary" onclick="regenerateResult(${idx})">🔄 Tạo lại</button>
+      </div>
+    `;
+    resultsList.appendChild(card);
+  });
 
-    const results = await Promise.all(perTitleTasks);
-    const content = results.join('\n\n');
-    generatedResultsByTitle[titleIndex].content = content;
-    renderResultTabs();
-    if (activeResultIndex === titleIndex) showResultTab(titleIndex);
+  for (let i = 0; i < titles.length; i++) {
+    const title = titles[i];
+    const targetChars = Number(document.getElementById('maxChars').value || 1000);
+    const prompt = `Create ONE complete content piece based on this title:
+Title: ${title}
+Required length: EXACTLY ${targetChars} characters. Match the maximum value exactly.
+Writing requirements: ${document.getElementById('requirements').value.trim() || 'None.'}
+Output language: ${languageName(bot)}.
+Return only the final content, no explanation, no title header, no markdown.`;
+    
+    const data = await window.api.callApi({ bot, prompt });
+    const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
+    
+    generatedResultsByTitle[i].content = result;
+    const outEl = document.getElementById(`output_res_${i}`);
+    if (outEl) outEl.textContent = result;
+    const countEl = document.getElementById(`counter_res_${i}`);
+    if (countEl) countEl.textContent = `${result.length.toLocaleString('vi-VN')} ký tự`;
   }
-
-  // Nếu người dùng bấm tải/copy khi không chọn tab, vẫn giữ tab đang xem; data tất cả nằm trong generatedResultsByTitle.
-  showResultTab(activeResultIndex);
 }
-
 
 async function rewriteContent() {
   const bot = config.bots[Number(document.getElementById('selectBotTab3').value)];
@@ -421,4 +438,36 @@ async function regenerateGrid(gridIdx) {
   parts[gridIdx] = result;
   item.content = parts.join('\n\n');
   setGridOutput(gridIdx, result);
+}
+
+
+async function copyResult(idx) {
+  const text = generatedResultsByTitle[idx].content;
+  if (!text || text.includes('Đang')) return;
+  await navigator.clipboard.writeText(text);
+  alert('Đã copy!');
+}
+async function downloadResult(idx) {
+  const item = generatedResultsByTitle[idx];
+  if (!item.content || item.content.includes('Đang')) return;
+  const saved = await window.api.saveTextFile({ filename: `${item.title.slice(0,20)}.txt`, text: item.content });
+  if (saved) alert('Đã lưu file!');
+}
+async function regenerateResult(idx) {
+  const botIdx = document.getElementById('botSelectMain').value;
+  const bot = config.bots[Number(botIdx)];
+  const item = generatedResultsByTitle[idx];
+  
+  const outEl = document.getElementById(`output_res_${idx}`);
+  outEl.textContent = 'Đang tạo lại...';
+  
+  const targetChars = Number(document.getElementById('maxChars').value || 1000);
+  const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
+  
+  const data = await window.api.callApi({ bot, prompt });
+  const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
+  
+  generatedResultsByTitle[idx].content = result;
+  outEl.textContent = result;
+  document.getElementById(`counter_res_${idx}`).textContent = `${result.length.toLocaleString('vi-VN')} ký tự`;
 }

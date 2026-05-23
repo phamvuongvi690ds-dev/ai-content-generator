@@ -36,6 +36,14 @@
     .result-item-btn:hover { background: #1e293b; border-color: #475569; }
     .result-item-btn.active { background: #2563eb; color: white; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
     .result-item-btn .item-num { font-weight: 800; margin-right: 8px; opacity: 0.7; }
+    .results-container { display: block; margin-top: 20px; }
+    .results-main { width: 100%; display: flex; flex-direction: column; gap: 20px; }
+    .result-card-full { background: #020617; border: 1px solid var(--accent); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .result-card-header { background: #1e293b; padding: 12px 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .result-card-title { font-size: 14px; font-weight: 800; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+    .result-card-body { padding: 20px; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: #e2e8f0; background: #010409; max-height: 400px; overflow-y: auto; }
+    .result-card-footer { padding: 12px 20px; display: flex; gap: 12px; background: rgba(15,23,42,0.5); border-top: 1px solid #334155; }
+
 
     .range-group { display: flex; gap: 10px; align-items: center; }
     .range-group input { width: 100px; }
@@ -164,25 +172,12 @@
       <h3>Sáng tạo nội dung theo nhiều tiêu đề</h3>
       
       
-      <label>Chọn Chatbot cho từng ô kết quả</label>
-      <div class="grid-2" style="margin-bottom: 15px;">
-        <div class="form-group">
-          <label>Ô 1</label>
-          <select id="botSelect_0" class="bot-grid-select"></select>
-        </div>
-        <div class="form-group">
-          <label>Ô 2</label>
-          <select id="botSelect_1" class="bot-grid-select"></select>
-        </div>
-        <div class="form-group">
-          <label>Ô 3</label>
-          <select id="botSelect_2" class="bot-grid-select"></select>
-        </div>
-        <div class="form-group">
-          <label>Ô 4</label>
-          <select id="botSelect_3" class="bot-grid-select"></select>
-        </div>
+      
+      <div class="form-group">
+        <label>Chọn Chatbot thực hiện</label>
+        <select id="botSelectMain" style="max-width: 400px;"></select>
       </div>
+
 
 
       <div class="form-group">
@@ -208,8 +203,7 @@ Title 3..."></textarea>
       </div>
 
       <div class="results-container">
-        <div id="resultTabs" class="results-sidebar"></div>
-        <div class="results-main">
+        <div id="resultsList" class="results-main">
 
           <div class="prompt-grid">
             <!-- Card 1 -->
