@@ -98,7 +98,7 @@ function getBotFromForm() {
   return {
     name: document.getElementById('botName').value.trim(),
     apiType,
-    outputLanguage: document.getElementById('botOutputLanguage').value || 'en',
+    outputLanguage: document.getElementById('botOutputLanguage').value || 'vi',
     model: document.getElementById('botModel').value || 'gemini-3.5-flash',
     systemInstruction: document.getElementById('systemInstruction').value.trim(),
     baseUrl: document.getElementById('botBaseUrl').value.trim(),
@@ -261,7 +261,7 @@ function showResultTab(idx) {
 
 async function regenerateActiveTitle() {
   const botIdx = document.getElementById('botSelectMain').value;
-  if (botIdx === '') return alert('Chọn chatbot.');
+  if (botIdx === null || botIdx === undefined || botIdx === '') return alert('Hãy chọn 1 chatbot trong danh sách.');
   const bot = config.bots[Number(botIdx)];
   const item = generatedResultsByTitle[activeResultIndex];
   if (!item) return;
@@ -279,8 +279,10 @@ async function regenerateActiveTitle() {
 }
 
 async function generateContent() {
+  const btn = document.getElementById('generateBtn');
+  if(btn) { btn.disabled = true; btn.textContent = '⏳ Đang xử lý...'; }
   const botIdx = document.getElementById('botSelectMain').value;
-  if (botIdx === '') return alert('Chọn chatbot.');
+  if (botIdx === null || botIdx === undefined || botIdx === '') return alert('Hãy chọn 1 chatbot trong danh sách.');
   const bot = config.bots[Number(botIdx)];
   const titles = document.getElementById('topic').value.split(/\n+/).map(t => t.trim()).filter(Boolean);
   if (!titles.length) return alert('Nhập danh sách tiêu đề.');
@@ -301,6 +303,7 @@ async function generateContent() {
     if (activeResultIndex === i) setOutput('outputTab2', result);
     renderResultTabs();
   }
+  if(btn) { btn.disabled = false; btn.textContent = 'Bắt đầu chạy tất cả Bot đã chọn'; }
 }
 
 async function rewriteContent() {
