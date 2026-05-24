@@ -136,15 +136,18 @@
   <div id="tab2" class="tab-content">
     <div class="card">
       <h3>Sáng tạo nội dung hàng loạt</h3>
-      <div class="form-group">
-        <label>Chọn Chatbot</label>
-        <select id="botSelectMain" style="max-width:400px"></select>
-      </div>
-      <div class="form-group">
-        <label>Độ dài (Ký tự)</label>
-        <div style="display:flex; gap:10px; align-items:center">
-          Từ <input type="number" id="minChars" value="500" style="width:100px">
-          đến <input type="number" id="maxChars" value="1000" style="width:100px">
+      <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 15px;">
+        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+          <label>Chọn Chatbot</label>
+          <select id="botSelectMain"></select>
+        </div>
+        <div class="form-group" style="width: 300px; margin-bottom: 0;">
+          <label>Độ dài (Ký tự)</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="number" id="minChars" value="500" placeholder="Từ" style="padding: 8px;">
+            <span style="color: #94a3b8;">-</span>
+            <input type="number" id="maxChars" value="1000" placeholder="Đến" style="padding: 8px;">
+          </div>
         </div>
       </div>
       <div class="form-group">
