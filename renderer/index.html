@@ -1,312 +1,201 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
   <title>AI Content Generator Pro</title>
   <style>
-    :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --accent: #3b82f6; --border: #334155; }
-    body { font-family: Inter, -apple-system, system-ui, sans-serif; background: #0b1120; color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow:hidden; }
-    .tabs { height: 70px; width: 100%; background: #0f172a; border-bottom: 1px solid var(--border); display: flex; flex-direction: row; align-items: center; padding: 0 20px; gap: 12px; box-sizing:border-box; flex-shrink: 0; }
-    .tab { padding: 8px 18px; height: 40px; display: flex; align-items: center; cursor: pointer; border-radius: 10px; border-bottom: 3px solid transparent; transition: 0.2s; font-weight: 700; color:#94a3b8; white-space: nowrap; }
-    .tab:hover { background: #1e293b; color:#fff; }
-    .tab.active { background:#1e293b; border-bottom-color: var(--accent); border-left-color: transparent; color:#fff; }
-    .content-area { flex: 1; padding: 26px; overflow-y: auto; background: radial-gradient(circle at top left,#172554 0,#0b1120 35%); position: relative; z-index: 1; }
-    .tab-content { display: none; max-width: 1000px; margin: 0 auto; }
+    :root { --bg: #0b1120; --card: #1e293b; --text: #f1f5f9; --accent: #3b82f6; --border: #334155; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow:hidden; }
+    
+    /* Header Navigation */
+    .tabs { height: 65px; width: 100%; background: #0f172a; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 10px; flex-shrink: 0; }
+    .tab { padding: 8px 20px; cursor: pointer; border-radius: 8px; font-weight: 700; color: #94a3b8; transition: 0.2s; border-bottom: 3px solid transparent; }
+    .tab.active { color: #fff; background: #1e293b; border-bottom-color: var(--accent); }
+
+    .content-area { flex: 1; padding: 20px; overflow-y: auto; background: radial-gradient(circle at top left,#172554 0,#0b1120 40%); }
+    .tab-content { display: none; max-width: 1300px; margin: 0 auto; width: 100%; }
     .tab-content.active { display: block; }
-    .card { background: rgba(30,41,59,.92); border: 1px solid #334155; border-radius: 18px; padding: 22px; margin-bottom: 20px; box-shadow:0 20px 50px rgba(0,0,0,.22); position: relative; z-index: 2; }
+    
+    .card { background: rgba(30,41,59,.95); border: 1px solid #334155; border-radius: 16px; padding: 22px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-size: 14px; color: #94a3b8; }
+    label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: #cbd5e1; }
+    
+    input, textarea, select { width: 100%; background: #020617; border: 1px solid #475569; border-radius: 10px; padding: 12px; color: white; font-size: 14px; outline:none; }
+    input:focus, textarea:focus { border-color: var(--accent); }
     .password-mask { -webkit-text-security: disc !important; }
-    input, textarea, select { width: 100%; background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 12px; color: white; box-sizing: border-box; font-size: 14px; outline:none; position: relative; z-index: 50; pointer-events: auto !important; user-select: text; -webkit-user-select: text; -webkit-app-region: no-drag; } input:focus, textarea:focus, select:focus { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-    textarea { resize: vertical; min-height: 80px; display:block; cursor:text; }
-    button { background: linear-gradient(135deg,#2563eb,#7c3aed); color: white; border: none; padding: 11px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; }
-    button:hover { filter: brightness(1.1); }
+
+    button { background: linear-gradient(135deg,#2563eb,#7c3aed); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+    button:hover { transform: translateY(-1px); filter: brightness(1.1); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
     button.secondary { background: #475569; }
-    .bot-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border); }
-    .output-box { background: #020617; border: 1px solid var(--accent); padding: 15px; border-radius: 8px; white-space: pre-wrap; margin-top: 6px; min-height: 150px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.5; }
-    .output-wrap { position: relative; margin-top:12px; }
-    .char-counter { display:inline-block; background:#0ea5e9; color:#00111f; font-size:13px; font-weight:900; padding:6px 10px; border-radius:999px; margin-bottom:8px; box-shadow:0 0 0 2px rgba(14,165,233,.25); }
-    .result-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-    .result-tab { background:#0f172a; color:#cbd5e1; border:1px solid #334155; padding:8px 12px; border-radius:999px; cursor:pointer; font-size:13px; font-weight:800; }
-    .result-tab.active { background:#2563eb; color:white; border-color:#60a5fa; }
-    
-    .results-container { display: flex; gap: 20px; margin-top: 20px; align-items: flex-start; }
-    .results-sidebar { width: 300px; flex-shrink: 0; background: rgba(15, 23, 42, 0.6); border-radius: 16px; padding: 12px; border: 1px solid #334155; max-height: 800px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; position: sticky; top: 20px; }
+
+    /* Results Layout */
+    .results-container { display: flex; gap: 20px; margin-top: 20px; min-height: 500px; border-top: 1px solid var(--border); padding-top: 20px; }
+    .results-sidebar { width: 320px; flex-shrink: 0; background: rgba(15,23,42,0.5); border-radius: 12px; padding: 15px; border: 1px solid #334155; overflow-y: auto; max-height: 650px; }
     .results-main { flex: 1; min-width: 0; }
-    .result-item-btn { width: 100%; text-align: left; background: #0f172a; border: 1px solid #334155; color: #cbd5e1; padding: 14px 16px; border-radius: 12px; cursor: pointer; font-size: 13px; transition: all 0.2s; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-    .result-item-btn:hover { background: #1e293b; border-color: #475569; }
-    .result-item-btn.active { background: #2563eb; color: white; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+    
+    .result-item-btn { width: 100%; text-align: left; background: #0f172a; border: 1px solid #334155; color: #cbd5e1; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .result-item-btn.active { background: #2563eb; color: white; border-color: #60a5fa; }
     .result-item-btn .item-num { font-weight: 800; margin-right: 8px; opacity: 0.6; }
 
-    .results-sidebar { width: 280px; flex-shrink: 0; background: rgba(30,41,59,.5); border-radius: 12px; padding: 15px; border: 1px solid #334155; overflow-y: auto; max-height: 700px; }
-    .results-main { flex: 1; display: flex; flex-direction: column; }
-    .result-item-btn { width: 100%; text-align: left; background: #0f172a; border: 1px solid #334155; color: #cbd5e1; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .result-item-btn:hover { background: #1e293b; border-color: #475569; }
-    .result-item-btn.active { background: #2563eb; color: white; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
-    .result-item-btn .item-num { font-weight: 800; margin-right: 8px; opacity: 0.7; }
-    
-    .results-container { display: flex; gap: 20px; margin-top: 20px; align-items: flex-start; }
-    .results-sidebar { width: 300px; flex-shrink: 0; background: rgba(15, 23, 42, 0.6); border-radius: 16px; padding: 12px; border: 1px solid #334155; max-height: 800px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; position: sticky; top: 20px; }
-    .results-main { flex: 1; min-width: 0; }
-    .result-item-btn { width: 100%; text-align: left; background: #0f172a; border: 1px solid #334155; color: #cbd5e1; padding: 14px 16px; border-radius: 12px; cursor: pointer; font-size: 13px; transition: all 0.2s; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-    .result-item-btn:hover { background: #1e293b; border-color: #475569; }
-    .result-item-btn.active { background: #2563eb; color: white; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
-    .result-item-btn .item-num { font-weight: 800; margin-right: 8px; opacity: 0.6; }
-
-    .results-main { width: 100%; display: flex; flex-direction: column; gap: 20px; }
-    .result-card-full { background: #020617; border: 1px solid var(--accent); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    .result-card-header { background: #1e293b; padding: 12px 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-    .result-card-title { font-size: 14px; font-weight: 800; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
-    .result-card-body { padding: 20px; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: #e2e8f0; background: #010409; max-height: 400px; overflow-y: auto; }
-    .result-card-footer { padding: 12px 20px; display: flex; gap: 12px; background: rgba(15,23,42,0.5); border-top: 1px solid #334155; }
-
-
-    .range-group { display: flex; gap: 10px; align-items: center; }
-    .range-group input { width: 100px; }
-    .api-options { display: flex; gap: 15px; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
-    .api-options label { display: flex; align-items: center; gap: 5px; cursor: pointer; color: white; margin-bottom: 0; }
-    .api-options input { width: auto; }
-    .multi-bot-select { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; max-height: 200px; overflow-y: auto; }
-    .check-item { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
-    .check-item input { width: auto; }
-    .prompt-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 350px 350px; gap: 15px; flex: 1; height: 715px; }
-    .prompt-card { background: #020617; border: 1px solid var(--accent); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-    .prompt-card-header { background: #1e293b; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
-    .prompt-card-title { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
-    .prompt-card-body { height: 260px; padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap; color: #e2e8f0; background: #010409; }
-    .prompt-card-footer { padding: 8px; display: flex; gap: 8px; background: rgba(15,23,42,0.5); border-top: 1px solid #334155; }
-    .prompt-card-footer button { padding: 5px 10px; font-size: 11px; }
-    .prompt-card .char-counter-mini { font-size: 10px; font-weight: 900; color: #38bdf8; }
-
+    .output-box { background: #010409; border: 1px solid var(--accent); padding: 20px; border-radius: 12px; white-space: pre-wrap; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6; min-height: 400px; color: #e2e8f0; overflow-y: auto; }
+    .char-counter { display: inline-block; background: #0ea5e9; color: #fff; font-size: 12px; font-weight: 800; padding: 4px 12px; border-radius: 99px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
-<div class="tabs"><div style="font-size:18px;font-weight:900;color:#fff;margin-right:30px;letter-spacing:-0.5px">AI CONTENT PRO</div>
-  <div class="tab active" onclick="showTab(1)">Tab 1: Quản lý Chatbot</div>
-  <div class="tab" onclick="showTab(2)">Tab 2: Sáng tạo đa Bot</div>
-  <div class="tab" onclick="showTab(3)">Tab 3: Viết lại</div>
+<div class="tabs">
+  <div style="font-size:18px; font-weight:900; color:#fff; margin-right:30px;">AI CONTENT PRO</div>
+  <div class="tab active" onclick="showTab(1)">Cấu hình Bot</div>
+  <div class="tab" onclick="showTab(2)">Sáng tạo nội dung</div>
+  <div class="tab" onclick="showTab(3)">Viết lại</div>
 </div>
 
 <div class="content-area">
-  <!-- TAB 1: Quản lý Chatbot -->
+  <!-- TAB 1 -->
   <div id="tab1" class="tab-content active">
     <div class="card">
       <h3>Thiết lập Chatbot Mới</h3>
-      
       <div class="form-group">
-        <label>Tên Gợi Nhớ của Chatbot</label>
-        <input type="text" id="botName" style="pointer-events:auto !important; position:relative; z-index:100;" placeholder="Ví dụ: Bot SEO, Bot Kịch Bản...">
+        <label>Tên Gợi Nhớ</label>
+        <input type="text" id="botName" placeholder="Ví dụ: Bot SEO, Bot TikTok...">
       </div>
-
       <div class="form-group">
-        <label>Loại API cho Bot này</label>
-        <div class="api-options">
-          <label><input type="radio" name="botApiType" value="gateway" checked onchange="toggleBotApiInputs()"> Vertex Gateway</label>
-          <label><input type="radio" name="botApiType" value="gemini" onchange="toggleBotApiInputs()"> Gemini API Direct</label>
-          <label><input type="radio" name="botApiType" value="vertex" onchange="toggleBotApiInputs()"> Vertex AI (OAuth)</label>
-          <label><input type="radio" name="botApiType" value="openai" onchange="toggleBotApiInputs()"> ChatGPT / OpenAI</label>
+        <label>Loại API</label>
+        <div style="display:flex; gap:15px; background:#0f172a; padding:10px; border-radius:8px;">
+          <label style="color:#fff; cursor:pointer;"><input type="radio" name="botApiType" value="gateway" checked onchange="toggleBotApiInputs()"> Gateway</label>
+          <label style="color:#fff; cursor:pointer;"><input type="radio" name="botApiType" value="gemini" onchange="toggleBotApiInputs()"> Gemini Direct</label>
+          <label style="color:#fff; cursor:pointer;"><input type="radio" name="botApiType" value="vertex" onchange="toggleBotApiInputs()"> Vertex OAuth</label>
+          <label style="color:#fff; cursor:pointer;"><input type="radio" name="botApiType" value="openai" onchange="toggleBotApiInputs()"> OpenAI</label>
         </div>
       </div>
-
       <div id="botGatewayGroup">
         <div class="form-group">
-          <label>Vertex Gateway Base URL</label>
+          <label>Gateway Base URL</label>
           <input type="text" id="botBaseUrl" value="https://fisher-fare-wiley-travelling.trycloudflare.com">
         </div>
         <div class="form-group">
-          <label>Gateway API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
-          <textarea id="botApiKeysGateway" class="password-mask" placeholder="key_1&#10;key_2"></textarea>
+          <label>API Keys</label>
+          <textarea id="botApiKeysGateway" class="password-mask" rows="2"></textarea>
         </div>
       </div>
-
       <div id="botGeminiGroup" style="display:none">
         <div class="form-group">
           <label>Gemini Base URL</label>
           <input type="text" id="botGeminiBaseUrl" value="https://generativelanguage.googleapis.com">
         </div>
         <div class="form-group">
-          <label>Gemini API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
-          <textarea id="botApiKeysGemini" class="password-mask" placeholder="AIza...&#10;AIza..."></textarea>
+          <label>Gemini API Keys</label>
+          <textarea id="botApiKeysGemini" class="password-mask" rows="2"></textarea>
         </div>
       </div>
-
       <div id="botVertexGroup" style="display:none">
         <div class="form-group">
-          <label>Service Account JSON File (Vertex AI OAuth)</label>
-          <div style="display:flex; gap:10px">
-            <input type="text" id="botServiceAccountPath" readonly placeholder="Chọn file JSON từ máy tính">
-            <button onclick="pickServiceAccount()" class="secondary" style="white-space:nowrap">Chọn File</button>
-          </div>
+          <label>Service Account JSON</label>
+          <input type="text" id="botServiceAccountPath" readonly>
+          <button class="secondary" style="margin-top:5px" onclick="pickServiceAccount()">Chọn File</button>
         </div>
       </div>
-
       <div id="botOpenAIGroup" style="display:none">
         <div class="form-group">
           <label>OpenAI Base URL</label>
           <input type="text" id="botOpenAIBaseUrl" value="https://api.openai.com">
         </div>
         <div class="form-group">
-          <label>OpenAI API Keys (mỗi dòng 1 key, tự xoay vòng)</label>
-          <textarea id="botApiKeysOpenAI" class="password-mask" placeholder="sk-...&#10;sk-..."></textarea>
+          <label>OpenAI API Keys</label>
+          <textarea id="botApiKeysOpenAI" class="password-mask" rows="2"></textarea>
         </div>
       </div>
-
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px">
+        <div class="form-group">
+          <label>Model ID</label>
+          <select id="botModel"></select>
+        </div>
+        <div class="form-group">
+          <label>Ngôn ngữ</label>
+          <select id="botOutputLanguage">
+            <option value="vi">Tiếng Việt</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
       <div class="form-group">
-        <label>Model ID</label>
-        <select id="botModel"></select>
+        <label>System Instruction</label>
+        <textarea id="systemInstruction" rows="4"></textarea>
       </div>
-
-      <div class="form-group">
-        <label>Ngôn ngữ đầu ra mặc định</label>
-        <select id="botOutputLanguage">
-          <option value="en">English</option>
-          <option value="vi">Tiếng Việt</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>System Instruction (Gem chỉ dẫn)</label>
-        <textarea id="systemInstruction" rows="8" style="min-height:180px; pointer-events:auto !important; user-select:text; -webkit-user-select:text;" placeholder="Nhap chi dan cho chatbot..."></textarea>
-      </div>
-
-      <div style="display:flex; gap:10px">
-        <button id="saveBotBtn" onclick="addBot()">Lưu Chatbot</button>
-        <button class="secondary" onclick="clearBotForm()">Hủy / Tạo mới</button>
-      </div>
+      <button id="saveBotBtn" onclick="addBot()">Lưu Chatbot</button>
+      <button class="secondary" onclick="clearBotForm()">Hủy / Tạo mới</button>
     </div>
-
     <div class="card">
       <h3>Danh sách Chatbot đã lưu</h3>
       <div id="botList"></div>
     </div>
   </div>
 
-  <!-- TAB 2: Sáng tạo đa Bot -->
+  <!-- TAB 2 -->
   <div id="tab2" class="tab-content">
     <div class="card">
-      <h3>Sáng tạo nội dung theo nhiều tiêu đề</h3>
-      
-      
-      
+      <h3>Sáng tạo nội dung hàng loạt</h3>
       <div class="form-group">
-        <label>Chọn Chatbot thực hiện</label>
-        <select id="botSelectMain" style="max-width: 400px;"></select>
+        <label>Chọn Chatbot</label>
+        <select id="botSelectMain" style="max-width:400px"></select>
       </div>
-
-
-
       <div class="form-group">
-        <label>Độ dài nội dung (Ký tự)</label>
-        <div class="range-group">
-          Từ <input type="number" id="minChars" value="500"> 
-          đến <input type="number" id="maxChars" value="1000">
+        <label>Độ dài (Ký tự)</label>
+        <div style="display:flex; gap:10px; align-items:center">
+          Từ <input type="number" id="minChars" value="500" style="width:100px">
+          đến <input type="number" id="maxChars" value="1000" style="width:100px">
         </div>
       </div>
       <div class="form-group">
-        <label>Danh sách tiêu đề — mỗi dòng 1 tiêu đề, mỗi tiêu đề tạo 1 nội dung riêng</label>
-        <textarea id="topic" style="min-height:160px" placeholder="Title 1...
-Title 2...
-Title 3..."></textarea>
+        <label>Danh sách tiêu đề (mỗi dòng 1 tiêu đề)</label>
+        <textarea id="topic" rows="5" placeholder="Tiêu đề 1..."></textarea>
       </div>
       <div class="form-group">
-        <label>Yêu cầu cụ thể</label>
-        <textarea id="requirements" placeholder="Nhập yêu cầu chi tiết đầu ra..."></textarea>
+        <label>Yêu cầu thêm</label>
+        <input type="text" id="requirements" placeholder="Ví dụ: Giọng văn hài hước...">
       </div>
+      <button id="generateBtn" onclick="generateContent()">🚀 Bắt đầu tạo nội dung</button>
       
-      <div style="display:flex; gap:10px; margin-bottom:15px">
-        <button id="generateBtn" onclick="generateContent()" style="background:#059669">Bắt đầu chạy tất cả Bot đã chọn</button>
-      </div>
-
       <div class="results-container">
-        <div id="resultsList" class="results-main">
-
-          <div class="prompt-grid">
-            <!-- Card 1 -->
-            <div class="prompt-card">
-              <div class="prompt-card-header">
-                <span class="prompt-card-title">Kết quả 1</span>
-                <span class="char-counter-mini" id="counter_grid_0">0 ký tự</span>
-              </div>
-              <div id="output_grid_0" class="prompt-card-body">Trống...</div>
-              <div class="prompt-card-footer">
-                <button class="secondary" onclick="copyGrid(0)">📋 Copy</button>
-                <button class="secondary" onclick="downloadGrid(0)">💾 Tải .txt</button>
-                <button class="btn-primary" onclick="regenerateGrid(0)">🔄 Tạo lại</button>
-              </div>
-            </div>
-            <!-- Card 2 -->
-            <div class="prompt-card">
-              <div class="prompt-card-header">
-                <span class="prompt-card-title">Kết quả 2</span>
-                <span class="char-counter-mini" id="counter_grid_1">0 ký tự</span>
-              </div>
-              <div id="output_grid_1" class="prompt-card-body">Trống...</div>
-              <div class="prompt-card-footer">
-                <button class="secondary" onclick="copyGrid(1)">📋 Copy</button>
-                <button class="secondary" onclick="downloadGrid(1)">💾 Tải .txt</button>
-                <button class="btn-primary" onclick="regenerateGrid(1)">🔄 Tạo lại</button>
-              </div>
-            </div>
-            <!-- Card 3 -->
-            <div class="prompt-card">
-              <div class="prompt-card-header">
-                <span class="prompt-card-title">Kết quả 3</span>
-                <span class="char-counter-mini" id="counter_grid_2">0 ký tự</span>
-              </div>
-              <div id="output_grid_2" class="prompt-card-body">Trống...</div>
-              <div class="prompt-card-footer">
-                <button class="secondary" onclick="copyGrid(2)">📋 Copy</button>
-                <button class="secondary" onclick="downloadGrid(2)">💾 Tải .txt</button>
-                <button class="btn-primary" onclick="regenerateGrid(2)">🔄 Tạo lại</button>
-              </div>
-            </div>
-            <!-- Card 4 -->
-            <div class="prompt-card">
-              <div class="prompt-card-header">
-                <span class="prompt-card-title">Kết quả 4</span>
-                <span class="char-counter-mini" id="counter_grid_3">0 ký tự</span>
-              </div>
-              <div id="output_grid_3" class="prompt-card-body">Trống...</div>
-              <div class="prompt-card-footer">
-                <button class="secondary" onclick="copyGrid(3)">📋 Copy</button>
-                <button class="secondary" onclick="downloadGrid(3)">💾 Tải .txt</button>
-                <button class="btn-primary" onclick="regenerateGrid(3)">🔄 Tạo lại</button>
-              </div>
+        <div id="resultTabs" class="results-sidebar">
+          <p style="color:#64748b; font-size:12px">Chưa có kết quả.</p>
+        </div>
+        <div class="results-main">
+          <div id="tab2OutputWrap" style="display:none">
+            <div class="char-counter" id="counterTab2">0 ký tự</div>
+            <div id="outputTab2" class="output-box"></div>
+            <div style="margin-top:15px; display:flex; gap:10px;">
+              <button class="btn-primary" onclick="regenerateActiveTitle()">🔄 Tạo lại tiêu đề này</button>
+              <button class="secondary" onclick="copyOutput('outputTab2')">📋 Copy</button>
+              <button class="secondary" onclick="downloadOutput('outputTab2','content.txt')">💾 Tải .txt</button>
             </div>
           </div>
-
         </div>
       </div>
     </div>
   </div>
 
-  <!-- TAB 3: Viết lại -->
+  <!-- TAB 3 -->
   <div id="tab3" class="tab-content">
     <div class="card">
       <h3>Viết lại nội dung</h3>
       <div class="form-group">
-        <label>Chọn Chatbot xử lý</label>
+        <label>Chọn Chatbot</label>
         <select id="selectBotTab3"></select>
       </div>
       <div class="form-group">
         <label>Nội dung gốc</label>
-        <textarea id="originalContent" style="min-height: 180px;" placeholder="Dán nội dung cần viết lại vào đây..."></textarea>
+        <textarea id="originalContent" rows="8"></textarea>
       </div>
       <div class="form-group">
         <label>Yêu cầu viết lại</label>
-        <textarea id="rewriteRequirements" placeholder="Hài hước, chuyên nghiệp, ngắn gọn..."></textarea>
+        <textarea id="rewriteRequirements" rows="2"></textarea>
       </div>
-      <div style="display:flex; gap:10px; margin-bottom:15px">
-        <button id="rewriteBtn" onclick="rewriteContent()">Bắt đầu viết lại</button>
-        <button class="secondary" onclick="copyOutput('outputTab3')">Copy nội dung</button>
-        <button class="secondary" onclick="downloadOutput('outputTab3','rewritten-content.txt')">Tải file .txt</button>
-      </div>
-      <div class="output-wrap">
+      <button onclick="rewriteContent()">♻️ Bắt đầu viết lại</button>
+      <div class="output-wrap" style="margin-top:20px">
         <div class="char-counter" id="counterTab3">0 ký tự</div>
-        <div id="outputTab3" class="output-box">Nội dung mới sẽ hiện ở đây...</div>
-          </div>
-        </div>
+        <div id="outputTab3" class="output-box"></div>
       </div>
     </div>
   </div>

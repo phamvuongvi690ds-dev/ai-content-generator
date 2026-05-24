@@ -1,36 +1,27 @@
 let config = { bots: [] };
 let editingIndex = -1;
+let generatedResultsByTitle = [];
+let activeResultIndex = 0;
 
 const MODEL_OPTIONS = {
   gateway: [
     { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-    { value: 'imagen-3.0-generate-002', label: 'Imagen 3 Generate 002' },
-    { value: 'imagen-3.0-fast-generate-001', label: 'Imagen 3 Fast Generate 001' }
+    { value: 'imagen-3.0-generate-002', label: 'Imagen 3' }
   ],
   gemini: [
     { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
-    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' }
   ],
   vertex: [
     { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
-    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-    { value: 'imagen-3.0-generate-002', label: 'Imagen 3 Generate 002' },
-    { value: 'imagen-3.0-fast-generate-001', label: 'Imagen 3 Fast Generate 001' }
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }
   ],
   openai: [
     { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
-    { value: 'gpt-4o', label: 'GPT-4o' },
-    { value: 'gpt-4.1-mini', label: 'GPT-4.1 mini' },
-    { value: 'gpt-4.1', label: 'GPT-4.1' },
-    { value: 'o4-mini', label: 'o4-mini' },
-    { value: 'o3-mini', label: 'o3-mini' }
+    { value: 'gpt-4o', label: 'GPT-4o' }
   ]
 };
 
@@ -45,11 +36,11 @@ window.onload = async () => {
 function showTab(n) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const tabButtons = Array.from(document.querySelectorAll('.tab'));
-  const targetButton = tabButtons[n - 1];
-  const targetContent = document.getElementById(`tab${n}`);
-  if (targetButton) targetButton.classList.add('active');
-  if (targetContent) targetContent.classList.add('active');
+  const btns = Array.from(document.querySelectorAll('.tab'));
+  if (btns[n-1]) btns[n-1].classList.add('active');
+  const contents = ['tab1', 'tab2', 'tab3'];
+  const target = document.getElementById(contents[n-1]);
+  if (target) target.classList.add('active');
 }
 
 function currentBotApiType() {
@@ -69,22 +60,17 @@ function updateModelOptions(selectedValue = '') {
     opt.textContent = `${m.label} (${m.value})`;
     select.appendChild(opt);
   });
-  if (selectedValue && !options.some(m => m.value === selectedValue)) {
-    const custom = document.createElement('option');
-    custom.value = selectedValue;
-    custom.textContent = `Custom: ${selectedValue}`;
-    select.appendChild(custom);
-  }
-  select.value = selectedValue || options[0].value;
+  if (selectedValue) select.value = selectedValue;
 }
 
 function toggleBotApiInputs() {
   const type = currentBotApiType();
-  document.getElementById('botGatewayGroup').style.display = type === 'gateway' ? 'block' : 'none';
-  document.getElementById('botGeminiGroup').style.display = type === 'gemini' ? 'block' : 'none';
-  document.getElementById('botVertexGroup').style.display = type === 'vertex' ? 'block' : 'none';
-  document.getElementById('botOpenAIGroup').style.display = type === 'openai' ? 'block' : 'none';
-  updateModelOptions(document.getElementById('botModel')?.value || '');
+  const groups = ['botGatewayGroup', 'botGeminiGroup', 'botVertexGroup', 'botOpenAIGroup'];
+  groups.forEach(g => {
+    const el = document.getElementById(g);
+    if(el) el.style.display = (g.toLowerCase().includes(type)) ? 'block' : 'none';
+  });
+  updateModelOptions();
 }
 
 async function pickServiceAccount() {
@@ -94,32 +80,27 @@ async function pickServiceAccount() {
 
 function getBotFromForm() {
   const apiType = currentBotApiType();
-  const keyBox = apiType === 'gemini' ? 'botApiKeysGemini' : (apiType === 'openai' ? 'botApiKeysOpenAI' : (apiType === 'gateway' ? 'botApiKeysGateway' : ''));
+  const keyBox = apiType === 'gemini' ? 'botApiKeysGemini' : (apiType === 'openai' ? 'botApiKeysOpenAI' : 'botApiKeysGateway');
   return {
     name: document.getElementById('botName').value.trim(),
     apiType,
     outputLanguage: document.getElementById('botOutputLanguage').value || 'vi',
-    model: document.getElementById('botModel').value || 'gemini-3.5-flash',
+    model: document.getElementById('botModel').value,
     systemInstruction: document.getElementById('systemInstruction').value.trim(),
     baseUrl: document.getElementById('botBaseUrl').value.trim(),
     geminiBaseUrl: document.getElementById('botGeminiBaseUrl').value.trim() || 'https://generativelanguage.googleapis.com',
     openaiBaseUrl: document.getElementById('botOpenAIBaseUrl').value.trim() || 'https://api.openai.com',
     serviceAccountPath: document.getElementById('botServiceAccountPath').value.trim(),
-    apiKeys: (document.getElementById(keyBox)?.value || '').split(/\n+/).map(k => k.trim()).filter(Boolean),
+    apiKeys: (document.getElementById(keyBox)?.value || '').split('\n').map(k => k.trim()).filter(Boolean),
     keyIndex: 0
   };
 }
 
 async function addBot() {
   const bot = getBotFromForm();
-  if (!bot.name || !bot.systemInstruction) return alert('Nhập tên bot và hướng dẫn AI.');
-  if (bot.apiType !== 'vertex' && bot.apiKeys.length === 0) return alert('Nhập ít nhất 1 API key.');
+  if (!bot.name) return alert('Nhập tên bot.');
   if (editingIndex >= 0) config.bots[editingIndex] = bot;
-  else {
-    const existingIndex = config.bots.findIndex(b => b.name === bot.name);
-    if (existingIndex >= 0) config.bots[existingIndex] = bot;
-    else config.bots.push(bot);
-  }
+  else config.bots.push(bot);
   await window.api.saveConfig(config);
   clearBotForm();
   renderBots();
@@ -129,212 +110,142 @@ function clearBotForm() {
   editingIndex = -1;
   document.getElementById('botName').value = '';
   document.getElementById('systemInstruction').value = '';
-  document.getElementById('botBaseUrl').value = 'https://fisher-fare-wiley-travelling.trycloudflare.com';
-  document.getElementById('botGeminiBaseUrl').value = 'https://generativelanguage.googleapis.com';
-  document.getElementById('botOpenAIBaseUrl').value = 'https://api.openai.com';
-  document.getElementById('botServiceAccountPath').value = '';
-  document.getElementById('botApiKeysGateway').value = '';
-  document.getElementById('botApiKeysGemini').value = '';
-  document.getElementById('botApiKeysOpenAI').value = '';
   document.getElementById('saveBotBtn').textContent = 'Lưu Chatbot';
-  updateModelOptions();
 }
 
-async function deleteBot(index) {
-  if (!confirm('Xóa chatbot này?')) return;
-  config.bots.splice(index, 1);
+async function deleteBot(idx) {
+  if (!confirm('Xóa bot này?')) return;
+  config.bots.splice(idx, 1);
   await window.api.saveConfig(config);
   renderBots();
 }
 
-function editBot(index) {
-  editingIndex = index;
-  const bot = config.bots[index];
+function editBot(idx) {
+  editingIndex = idx;
+  const bot = config.bots[idx];
   document.getElementById('botName').value = bot.name;
-  const radios = document.querySelectorAll('input[name="botApiType"]');
-  radios.forEach(r => { if (r.value === bot.apiType) r.checked = true; });
-  toggleBotApiInputs();
-  document.getElementById('botModel').value = bot.model;
-  document.getElementById('botOutputLanguage').value = bot.outputLanguage || 'en';
   document.getElementById('systemInstruction').value = bot.systemInstruction;
-  document.getElementById('botBaseUrl').value = bot.baseUrl || '';
-  document.getElementById('botGeminiBaseUrl').value = bot.geminiBaseUrl || 'https://generativelanguage.googleapis.com';
-  document.getElementById('botOpenAIBaseUrl').value = bot.openaiBaseUrl || 'https://api.openai.com';
-  document.getElementById('botServiceAccountPath').value = bot.serviceAccountPath || '';
-  const keyText = (bot.apiKeys || []).join('\n');
-  document.getElementById('botApiKeysGateway').value = bot.apiType === 'gateway' ? keyText : '';
-  document.getElementById('botApiKeysGemini').value = bot.apiType === 'gemini' ? keyText : '';
-  document.getElementById('botApiKeysOpenAI').value = bot.apiType === 'openai' ? keyText : '';
   document.getElementById('saveBotBtn').textContent = 'Cập nhật Chatbot';
-  showTab(1);
 }
 
 function renderBots() {
   const list = document.getElementById('botList');
-  const rewriteSelect = document.getElementById('selectBotTab3');
-  const botSelectMain = document.getElementById('botSelectMain');
-  list.innerHTML = '';
-  if(rewriteSelect) rewriteSelect.innerHTML = '';
-  if(botSelectMain) botSelectMain.innerHTML = '';
-
-  if (!config.bots.length) {
-    list.innerHTML = '<p style="color:#94a3b8">Chưa có chatbot nào.</p>';
-    return;
-  }
+  const mainSelect = document.getElementById('botSelectMain');
+  const tab3Select = document.getElementById('selectBotTab3');
+  
+  if(list) list.innerHTML = '';
+  if(mainSelect) mainSelect.innerHTML = '';
+  if(tab3Select) tab3Select.innerHTML = '';
 
   config.bots.forEach((bot, index) => {
-    const div = document.createElement('div');
-    div.className = 'bot-item';
-    div.innerHTML = `<div><b>${bot.name}</b><br><small>${bot.apiType || 'gateway'} · ${bot.model || ''}</small></div><div><button onclick="editBot(${index})" class="secondary">Sửa</button> <button onclick="deleteBot(${index})" style="background:#ef4444">Xóa</button></div>`;
-    list.appendChild(div);
-
-    if(botSelectMain) {
-      const opt = document.createElement('option');
-      opt.value = index;
-      opt.textContent = bot.name;
-      botSelectMain.appendChild(opt);
+    if(list) {
+       const div = document.createElement('div');
+       div.className = 'bot-item';
+       div.style = 'display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #334155;';
+       div.innerHTML = `<span><b>${bot.name}</b> (${bot.model})</span>
+                        <div><button onclick="editBot(${index})" class="secondary">Sửa</button> 
+                        <button onclick="deleteBot(${index})" style="background:#ef4444">Xóa</button></div>`;
+       list.appendChild(div);
     }
-
-    if(rewriteSelect) {
-      const opt = document.createElement('option');
-      opt.value = index;
-      opt.textContent = `${bot.name} (${bot.apiType} · ${bot.model})`;
-      rewriteSelect.appendChild(opt);
-    }
+    const opt = document.createElement('option');
+    opt.value = index;
+    opt.textContent = bot.name;
+    if(mainSelect) mainSelect.appendChild(opt.cloneNode(true));
+    if(tab3Select) tab3Select.appendChild(opt);
   });
-}
-
-function extractText(data) {
-  const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || JSON.stringify(data, null, 2);
-  return data?._fallbackModelUsed ? `[Fallback model used: ${data._fallbackModelUsed}]\n\n${text}` : text;
 }
 
 function setOutput(id, text) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = text || '';
-  const counterId = id === 'outputTab2' ? 'counterTab2' : (id === 'outputTab3' ? 'counterTab3' : null);
-  if (counterId) {
-    const counter = document.getElementById(counterId);
-    const count = (text || '').length;
-    if (counter) counter.textContent = `${count.toLocaleString('vi-VN')} ký tự`;
-  }
-}
-
-function normalizeExactLength(text, targetLen) {
-  text = (text || '').trim();
-  targetLen = Number(targetLen || 0);
-  if (!targetLen || targetLen < 1) return text;
-  if (text.length > targetLen) return text.slice(0, targetLen).trimEnd();
-  return text;
-}
-
-function languageName(bot) {
-  return bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English';
-}
-
-let generatedResultsByTitle = [];
-let activeResultIndex = 0;
-
-function renderResultTabs() {
-  const wrap = document.getElementById('resultTabs');
-  if (!wrap) return;
-  wrap.innerHTML = '';
-  generatedResultsByTitle.forEach((item, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'result-item-btn' + (idx === activeResultIndex ? ' active' : '');
-    btn.innerHTML = '<span class="item-num">' + (idx + 1) + '</span> ' + item.title;
-    btn.onclick = () => showResultTab(idx);
-    wrap.appendChild(btn);
-  });
+  const counter = document.getElementById(id === 'outputTab2' ? 'counterTab2' : 'counterTab3');
+  if (counter) counter.textContent = `${(text || '').length.toLocaleString('vi-VN')} ký tự`;
 }
 
 function showResultTab(idx) {
   activeResultIndex = idx;
-  renderResultTabs();
+  const wrap = document.getElementById('resultTabs');
+  if (wrap) {
+    wrap.innerHTML = '';
+    generatedResultsByTitle.forEach((res, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'result-item-btn' + (i === idx ? ' active' : '');
+      btn.innerHTML = `<span class="item-num">${i+1}</span> ${res.title}`;
+      btn.onclick = () => showResultTab(i);
+      wrap.appendChild(btn);
+    });
+  }
   const item = generatedResultsByTitle[idx];
-  if (!item) return;
-  
-  document.getElementById('tab2OutputWrap').style.display = 'block';
-  setOutput('outputTab2', item.content);
-}
-
-async function regenerateActiveTitle() {
-  const botIdx = document.getElementById('botSelectMain').value;
-  if (botIdx === null || botIdx === undefined || botIdx === '') return alert('Hãy chọn 1 chatbot trong danh sách.');
-  const bot = config.bots[Number(botIdx)];
-  const item = generatedResultsByTitle[activeResultIndex];
-  if (!item) return;
-
-  setOutput('outputTab2', 'Đang tạo lại nội dung...');
-
-  const targetChars = Number(document.getElementById('maxChars').value || 1000);
-  const prompt = `Create ONE complete content piece based on this title:\nTitle: ${item.title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
-  
-  const data = await window.api.callApi({ bot, prompt });
-  const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
-  
-  item.content = result;
-  setOutput('outputTab2', result);
+  if (item) {
+    document.getElementById('tab2OutputWrap').style.display = 'block';
+    setOutput('outputTab2', item.content);
+  }
 }
 
 async function generateContent() {
-  const btn = document.getElementById('generateBtn');
-  if(btn) { btn.disabled = true; btn.textContent = '⏳ Đang xử lý...'; }
   const botIdx = document.getElementById('botSelectMain').value;
-  if (botIdx === null || botIdx === undefined || botIdx === '') return alert('Hãy chọn 1 chatbot trong danh sách.');
-  const bot = config.bots[Number(botIdx)];
-  const titles = document.getElementById('topic').value.split(/\n+/).map(t => t.trim()).filter(Boolean);
-  if (!titles.length) return alert('Nhập danh sách tiêu đề.');
+  if (botIdx === '') return alert('Hãy chọn chatbot.');
+  const titles = document.getElementById('topic').value.split('\n').map(t => t.trim()).filter(Boolean);
+  if (!titles.length) return alert('Nhập tiêu đề.');
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang xử lý...';
 
   generatedResultsByTitle = titles.map(t => ({ title: t, content: 'Đang tạo nội dung...' }));
-  renderResultTabs();
   showResultTab(0);
 
-  for (let i = 0; i < titles.length; i++) {
-    const title = titles[i];
-    const targetChars = Number(document.getElementById('maxChars').value || 1000);
-    const prompt = `Create ONE complete content piece based on this title:\nTitle: ${title}\nRequired length: EXACTLY ${targetChars} characters. Match the maximum value exactly.\nWriting requirements: ${document.getElementById('requirements').value.trim() || 'None.'}\nOutput language: ${languageName(bot)}.\nReturn only the final content, no explanation, no title header, no markdown.`;
-    
-    const data = await window.api.callApi({ bot, prompt });
-    const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
-    
-    generatedResultsByTitle[i].content = result;
-    if (activeResultIndex === i) { setOutput('outputTab2', result); document.getElementById('tab2OutputWrap').style.display = 'block'; }
-    renderResultTabs();
-  }
-  if(btn) { btn.disabled = false; btn.textContent = 'Bắt đầu chạy tất cả Bot đã chọn'; }
-}
-
-async function rewriteContent() {
-  const botIdx = document.getElementById('selectBotTab3').value;
   const bot = config.bots[Number(botIdx)];
-  if (!bot) return alert('Chưa có chatbot. Hãy tạo ở Tab 1.');
-  const original = document.getElementById('originalContent').value.trim();
-  if (!original) return alert('Nhập nội dung gốc.');
-  const prompt = `Rewrite the content below with these requirements:\nRewrite requirements: ${document.getElementById('rewriteRequirements').value.trim() || 'Rewrite naturally, clearly, better, and keep the original meaning.'}\nOutput language: ${languageName(bot)}.\n\nOriginal content:\n${original}\n\nReturn only the rewritten content, no explanation.`;
-  setOutput('outputTab3', 'Đang viết lại...');
-  const data = await window.api.callApi({ bot, prompt });
-  setOutput('outputTab3', extractText(data));
+  const max = document.getElementById('maxChars').value;
+
+  for (let i = 0; i < titles.length; i++) {
+    const prompt = `Create content for title: ${titles[i]}. Length: EXACTLY ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
+    const data = await window.api.callApi({ bot, prompt });
+    const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi tạo nội dung.';
+    
+    generatedResultsByTitle[i].content = text;
+    if (activeResultIndex === i) setOutput('outputTab2', text);
+    showResultTab(activeResultIndex); // Refresh list
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🚀 Bắt đầu tạo nội dung';
 }
 
 async function copyOutput(id) {
-  const text = document.getElementById(id).textContent || '';
-  if (!text.trim() || text.includes('Đang')) return alert('Chưa có nội dung.');
+  const text = document.getElementById(id).textContent;
   await navigator.clipboard.writeText(text);
   alert('Đã copy!');
 }
 
 async function downloadOutput(id, filename) {
-  const text = document.getElementById(id).textContent || '';
-  if (!text.trim() || text.includes('Đang')) return alert('Chưa có nội dung.');
-  const saved = await window.api.saveTextFile({ filename, text });
-  if (saved) alert('Đã lưu file!');
+  const text = document.getElementById(id).textContent;
+  await window.api.saveTextFile({ filename, text });
+  alert('Đã lưu file!');
 }
 
-document.addEventListener('mousedown', (e) => {
-  const editable = e.target.closest('input, textarea, select');
-  if (editable && document.activeElement !== editable && typeof editable.focus === 'function') {
-    setTimeout(() => editable.focus(), 0);
-  }
-}, false);
+async function regenerateActiveTitle() {
+  const botIdx = document.getElementById('botSelectMain').value;
+  const bot = config.bots[Number(botIdx)];
+  const item = generatedResultsByTitle[activeResultIndex];
+  setOutput('outputTab2', 'Đang tạo lại...');
+  const max = document.getElementById('maxChars').value;
+  const prompt = `Create content for title: ${item.title}. Length: EXACTLY ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
+  const data = await window.api.callApi({ bot, prompt });
+  const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi.';
+  item.content = text;
+  setOutput('outputTab2', text);
+}
+
+async function rewriteContent() {
+  const botIdx = document.getElementById('selectBotTab3').value;
+  const bot = config.bots[Number(botIdx)];
+  const original = document.getElementById('originalContent').value;
+  const req = document.getElementById('rewriteRequirements').value;
+  setOutput('outputTab3', 'Đang viết lại...');
+  const prompt = `Rewrite this: ${original}. Requirements: ${req}. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}.`;
+  const data = await window.api.callApi({ bot, prompt });
+  const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi.';
+  setOutput('outputTab3', text);
+}
