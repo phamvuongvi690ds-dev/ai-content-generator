@@ -300,7 +300,7 @@ async function generateContent() {
     const result = normalizeExactLength(extractText(data), document.getElementById('maxChars').value);
     
     generatedResultsByTitle[i].content = result;
-    if (activeResultIndex === i) setOutput('outputTab2', result);
+    if (activeResultIndex === i) { setOutput('outputTab2', result); document.getElementById('tab2OutputWrap').style.display = 'block'; }
     renderResultTabs();
   }
   if(btn) { btn.disabled = false; btn.textContent = 'Bắt đầu chạy tất cả Bot đã chọn'; }
