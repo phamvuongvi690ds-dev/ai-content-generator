@@ -183,6 +183,15 @@ function showResultTab(idx) {
   }
 }
 
+function normalizeExactLength(text, targetLen) {
+  text = (text || '').trim();
+  targetLen = Number(targetLen || 0);
+  if (!targetLen || targetLen < 1) return text;
+  if (text.length > targetLen) return text.slice(0, targetLen);
+  if (text.length < targetLen) return text + ' '.repeat(targetLen - text.length);
+  return text;
+}
+
 async function generateContent() {
   const botIdx = document.getElementById('botSelectMain').value;
   if (botIdx === '') return alert('Hãy chọn chatbot.');
@@ -203,9 +212,10 @@ async function generateContent() {
     const prompt = `Create content for title: ${titles[i]}. Length: EXACTLY ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
     const data = await window.api.callApi({ bot, prompt });
     const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi tạo nội dung.';
+    const normalized = normalizeExactLength(text, max);
     
-    generatedResultsByTitle[i].content = text;
-    if (activeResultIndex === i) setOutput('outputTab2', text);
+    generatedResultsByTitle[i].content = normalized;
+    if (activeResultIndex === i) setOutput('outputTab2', normalized);
     showResultTab(activeResultIndex); // Refresh list
   }
 
@@ -234,8 +244,9 @@ async function regenerateActiveTitle() {
   const prompt = `Create content for title: ${item.title}. Length: EXACTLY ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
   const data = await window.api.callApi({ bot, prompt });
   const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi.';
-  item.content = text;
-  setOutput('outputTab2', text);
+  const normalized = normalizeExactLength(text, max);
+  item.content = normalized;
+  setOutput('outputTab2', normalized);
 }
 
 async function rewriteContent() {
