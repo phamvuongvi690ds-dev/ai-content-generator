@@ -183,12 +183,20 @@ function showResultTab(idx) {
   }
 }
 
-function normalizeExactLength(text, targetLen) {
+function normalizeToRange(text, min, max) {
   text = (text || '').trim();
-  targetLen = Number(targetLen || 0);
-  if (!targetLen || targetLen < 1) return text;
-  if (text.length > targetLen) return text.slice(0, targetLen);
-  if (text.length < targetLen) return text + ' '.repeat(targetLen - text.length);
+  min = Number(min || 0);
+  max = Number(max || 0);
+  
+  // Nếu text dài hơn max, cắt bớt về max
+  if (text.length > max && max > 0) {
+    return text.slice(0, max);
+  }
+  // Nếu text ngắn hơn min, bù thêm khoảng trắng cho bằng min
+  if (text.length < min && min > 0) {
+    return text + ' '.repeat(min - text.length);
+  }
+  // Nếu nằm trong khoảng min-max, giữ nguyên
   return text;
 }
 
@@ -206,13 +214,14 @@ async function generateContent() {
   showResultTab(0);
 
   const bot = config.bots[Number(botIdx)];
+  const min = document.getElementById('minChars').value;
   const max = document.getElementById('maxChars').value;
 
   for (let i = 0; i < titles.length; i++) {
-    const prompt = `Create content for title: ${titles[i]}. Length: EXACTLY ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
+    const prompt = `Create content for title: ${titles[i]}. Length: between ${min} and ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
     const data = await window.api.callApi({ bot, prompt });
     const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi tạo nội dung.';
-    const normalized = normalizeExactLength(text, max);
+    const normalized = normalizeToRange(text, min, max);
     
     generatedResultsByTitle[i].content = normalized;
     if (activeResultIndex === i) setOutput('outputTab2', normalized);
@@ -240,11 +249,12 @@ async function regenerateActiveTitle() {
   const bot = config.bots[Number(botIdx)];
   const item = generatedResultsByTitle[activeResultIndex];
   setOutput('outputTab2', 'Đang tạo lại...');
+  const min = document.getElementById('minChars').value;
   const max = document.getElementById('maxChars').value;
-  const prompt = `Create content for title: ${item.title}. Length: EXACTLY ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
+  const prompt = `Create content for title: ${item.title}. Length: between ${min} and ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
   const data = await window.api.callApi({ bot, prompt });
   const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi.';
-  const normalized = normalizeExactLength(text, max);
+  const normalized = normalizeToRange(text, min, max);
   item.content = normalized;
   setOutput('outputTab2', normalized);
 }
