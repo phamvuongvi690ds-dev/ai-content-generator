@@ -158,9 +158,11 @@ function renderBots() {
 function setOutput(id, text) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.textContent = text || '';
+  // Bỏ các dấu cách xuống dòng thừa, giữ văn bản liền mạch
+  const cleanText = (text || '').replace(/\n\s*\n/g, '\n').trim();
+  el.textContent = cleanText;
   const counter = document.getElementById(id === 'outputTab2' ? 'counterTab2' : 'counterTab3');
-  if (counter) counter.textContent = `${(text || '').length.toLocaleString('vi-VN')} ký tự`;
+  if (counter) counter.textContent = `${cleanText.length.toLocaleString('vi-VN')} ký tự`;
 }
 
 function showResultTab(idx) {
@@ -207,8 +209,15 @@ async function generateContent() {
   if (!titles.length) return alert('Nhập tiêu đề.');
 
   const btn = document.getElementById('generateBtn');
+  const progWrap = document.getElementById('genProgressWrap');
+  const progBar = document.getElementById('genProgressBar');
+  const errorBox = document.getElementById('genError');
+
   btn.disabled = true;
   btn.textContent = '⏳ Đang xử lý...';
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+  errorBox.style.display = 'none';
 
   generatedResultsByTitle = titles.map(t => ({ title: t, content: 'Đang tạo nội dung...' }));
   showResultTab(0);
@@ -216,20 +225,40 @@ async function generateContent() {
   const bot = config.bots[Number(botIdx)];
   const min = document.getElementById('minChars').value;
   const max = document.getElementById('maxChars').value;
+  const requirements = document.getElementById('requirements').value.trim();
 
   for (let i = 0; i < titles.length; i++) {
-    const prompt = `Create content for title: ${titles[i]}. Length: between ${min} and ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
-    const data = await window.api.callApi({ bot, prompt });
-    const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi tạo nội dung.';
-    const normalized = normalizeToRange(text, min, max);
-    
-    generatedResultsByTitle[i].content = normalized;
-    if (activeResultIndex === i) setOutput('outputTab2', normalized);
-    showResultTab(activeResultIndex); // Refresh list
+    try {
+      const prompt = `Create content for title: ${titles[i]}. 
+Length requirements: between ${min} and ${max} characters. 
+Additional requirements: ${requirements || 'None'}.
+Output language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. 
+Note: If extra requirements specify a different language, use that language for the entire output.
+Return only content, no conversational filler, no title header.`;
+      
+      const data = await window.api.callApi({ bot, prompt });
+      
+      if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
+      
+      const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi: Không nhận được phản hồi từ AI.';
+      const normalized = normalizeToRange(text, min, max);
+      
+      generatedResultsByTitle[i].content = normalized;
+      if (activeResultIndex === i) setOutput('outputTab2', normalized);
+      showResultTab(activeResultIndex);
+      
+      progBar.style.width = `${((i + 1) / titles.length) * 100}%`;
+    } catch (err) {
+      errorBox.textContent = `LỖI TẠI TIÊU ĐỀ "${titles[i]}":\n${err.message}`;
+      errorBox.style.display = 'block';
+      generatedResultsByTitle[i].content = `[LỖI]: ${err.message}`;
+      if (activeResultIndex === i) setOutput('outputTab2', `[LỖI]: ${err.message}`);
+    }
   }
 
   btn.disabled = false;
   btn.textContent = '🚀 Bắt đầu tạo nội dung';
+  setTimeout(() => { progWrap.style.display = 'none'; }, 2000);
 }
 
 async function copyOutput(id) {
@@ -246,17 +275,41 @@ async function downloadOutput(id, filename) {
 
 async function regenerateActiveTitle() {
   const botIdx = document.getElementById('botSelectMain').value;
+  if (botIdx === '') return alert('Hãy chọn chatbot.');
   const bot = config.bots[Number(botIdx)];
   const item = generatedResultsByTitle[activeResultIndex];
-  setOutput('outputTab2', 'Đang tạo lại...');
+  if (!item) return;
+
+  const outEl = document.getElementById('outputTab2');
+  const errorBox = document.getElementById('genError');
+  
+  outEl.textContent = '⏳ Đang tạo lại...';
+  errorBox.style.display = 'none';
+  
   const min = document.getElementById('minChars').value;
   const max = document.getElementById('maxChars').value;
-  const prompt = `Create content for title: ${item.title}. Length: between ${min} and ${max} characters. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. Return only content.`;
-  const data = await window.api.callApi({ bot, prompt });
-  const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi.';
-  const normalized = normalizeToRange(text, min, max);
-  item.content = normalized;
-  setOutput('outputTab2', normalized);
+  const requirements = document.getElementById('requirements').value.trim();
+
+  try {
+    const prompt = `Create content for title: ${item.title}. 
+Length requirements: between ${min} and ${max} characters. 
+Additional requirements: ${requirements || 'None'}.
+Output language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. 
+Note: If extra requirements specify a different language, use that language for the entire output.
+Return only content, no conversational filler, no title header.`;
+
+    const data = await window.api.callApi({ bot, prompt });
+    if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
+    
+    const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi.';
+    const normalized = normalizeToRange(text, min, max);
+    item.content = normalized;
+    setOutput('outputTab2', normalized);
+  } catch (err) {
+    errorBox.textContent = `LỖI KHI TẠO LẠI:\n${err.message}`;
+    errorBox.style.display = 'block';
+    outEl.textContent = `[LỖI]: ${err.message}`;
+  }
 }
 
 async function rewriteContent() {
