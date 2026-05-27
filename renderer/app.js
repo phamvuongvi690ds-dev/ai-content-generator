@@ -84,7 +84,6 @@ function getBotFromForm() {
   return {
     name: document.getElementById('botName').value.trim(),
     apiType,
-    outputLanguage: document.getElementById('botOutputLanguage').value || 'vi',
     model: document.getElementById('botModel').value,
     systemInstruction: document.getElementById('systemInstruction').value.trim(),
     baseUrl: document.getElementById('botBaseUrl').value.trim(),
@@ -231,10 +230,8 @@ async function generateContent() {
     try {
       const prompt = `Create content for title: ${titles[i]}. 
 Length requirements: between ${min} and ${max} characters. 
-Additional requirements: ${requirements || 'None'}.
-Output language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. 
-Note: If extra requirements specify a different language, use that language for the entire output.
-Return only content, no conversational filler, no title header.`;
+Additional requirements: ${requirements || 'Output in the language implied by the title or requirements.'}.
+Return only the final content without any conversational filler, title headers, or markdown.`;
       
       const data = await window.api.callApi({ bot, prompt });
       
@@ -293,10 +290,8 @@ async function regenerateActiveTitle() {
   try {
     const prompt = `Create content for title: ${item.title}. 
 Length requirements: between ${min} and ${max} characters. 
-Additional requirements: ${requirements || 'None'}.
-Output language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}. 
-Note: If extra requirements specify a different language, use that language for the entire output.
-Return only content, no conversational filler, no title header.`;
+Additional requirements: ${requirements || 'Output in the language implied by the title or requirements.'}.
+Return only the final content without any conversational filler, title headers, or markdown.`;
 
     const data = await window.api.callApi({ bot, prompt });
     if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
@@ -318,7 +313,11 @@ async function rewriteContent() {
   const original = document.getElementById('originalContent').value;
   const req = document.getElementById('rewriteRequirements').value;
   setOutput('outputTab3', 'Đang viết lại...');
-  const prompt = `Rewrite this: ${original}. Requirements: ${req}. Language: ${bot.outputLanguage === 'vi' ? 'Vietnamese' : 'English'}.`;
+  const prompt = `Rewrite the following content based on these requirements: ${req || 'Rewrite naturally and improve clarity.'}. 
+Return only the rewritten content.
+
+Original content:
+${original}`;
   const data = await window.api.callApi({ bot, prompt });
   const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi.';
   setOutput('outputTab3', text);
