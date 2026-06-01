@@ -189,15 +189,20 @@ function normalizeToRange(text, min, max) {
   min = Number(min || 0);
   max = Number(max || 0);
   
-  // Nếu text dài hơn max, cắt bớt về max
+  // Nếu text dài hơn max, không cắt ngang xương mà tìm dấu chấm gần nhất để kết thúc câu
   if (text.length > max && max > 0) {
-    return text.slice(0, max);
+    let truncated = text.slice(0, max);
+    const lastPunctuation = Math.max(
+      truncated.lastIndexOf('.'), 
+      truncated.lastIndexOf('?'), 
+      truncated.lastIndexOf('!')
+    );
+    if (lastPunctuation > max * 0.8) { // Chỉ cắt nếu dấu câu đủ gần cuối (tránh mất quá nhiều nội dung)
+      return truncated.slice(0, lastPunctuation + 1);
+    }
+    return truncated;
   }
-  // Nếu text ngắn hơn min, bù thêm khoảng trắng cho bằng min
-  if (text.length < min && min > 0) {
-    return text + ' '.repeat(min - text.length);
-  }
-  // Nếu nằm trong khoảng min-max, giữ nguyên
+  // Nếu text ngắn hơn min, giữ nguyên để AI tự điều chỉnh câu cú hoàn hảo, không bù khoảng trắng vô nghĩa
   return text;
 }
 
@@ -228,10 +233,12 @@ async function generateContent() {
 
   for (let i = 0; i < titles.length; i++) {
     try {
-      const prompt = `Create content for title: ${titles[i]}. 
-Length requirements: between ${min} and ${max} characters. 
+      const prompt = `Create high-quality, engaging content for title: ${titles[i]}. 
+Target length: strictly between ${min} and ${max} characters. 
+Current preference: Aim for approximately ${Math.floor((Number(min)+Number(max))/2)} characters for a balanced flow.
 Additional requirements: ${requirements || 'Output in the language implied by the title or requirements.'}.
-Return only the final content without any conversational filler, title headers, or markdown.`;
+Writing style: Ensure perfect grammar, natural flow, and a complete narrative. The content must end with a full sentence. Do not cut off mid-thought.
+Return ONLY the final content. No filler, no headers, no conversational text.`;
       
       const data = await window.api.callApi({ bot, prompt });
       
@@ -288,10 +295,12 @@ async function regenerateActiveTitle() {
   const requirements = document.getElementById('requirements').value.trim();
 
   try {
-    const prompt = `Create content for title: ${item.title}. 
-Length requirements: between ${min} and ${max} characters. 
+    const prompt = `Create high-quality, engaging content for title: ${item.title}. 
+Target length: strictly between ${min} and ${max} characters. 
+Current preference: Aim for approximately ${Math.floor((Number(min)+Number(max))/2)} characters for a balanced flow.
 Additional requirements: ${requirements || 'Output in the language implied by the title or requirements.'}.
-Return only the final content without any conversational filler, title headers, or markdown.`;
+Writing style: Ensure perfect grammar, natural flow, and a complete narrative. The content must end with a full sentence. Do not cut off mid-thought.
+Return ONLY the final content. No filler, no headers, no conversational text.`;
 
     const data = await window.api.callApi({ bot, prompt });
     if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
