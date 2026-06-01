@@ -231,8 +231,8 @@ async function generateContent() {
   const max = Number(document.getElementById('maxChars').value);
   const requirements = document.getElementById('requirements').value.trim();
 
-  // Ngưỡng tối đa cho một lần call API (tăng lên 4000 để tối ưu độ dài)
-  const MAX_PER_CALL = 4000;
+  // Ngưỡng an toàn cho mỗi lần gọi API (khoảng 2500 ký tự để tránh bị cắt giữa chừng)
+  const MAX_PER_CALL = 2500;
 
   for (let i = 0; i < titles.length; i++) {
     try {
@@ -245,15 +245,19 @@ async function generateContent() {
         
         for (let p = 1; p <= numParts; p++) {
           const isLast = (p === numParts);
+          // Chia đều khoảng Min/Max cho từng phần
           const currentMin = Math.floor(min / numParts);
           const currentMax = isLast ? (max - (targetPartLen * (numParts - 1))) : targetPartLen;
 
-          const prompt = `This is part ${p}/${numParts} of a very long, detailed content piece for the title: "${titles[i]}".
-CRITICAL REQUIREMENT: You MUST write at least ${currentMin} characters for this part. Aim for ${currentMax} characters.
+          const prompt = `This is PART ${p} of ${numParts} for the content titled: "${titles[i]}".
+GOAL: You are writing a very long, comprehensive piece. Each part must be substantial.
+STRICT REQUIREMENT: Write exactly between ${currentMin} and ${currentMax} characters for THIS PART ONLY.
 Requirements: ${requirements || 'High quality, extremely detailed content.'}.
-${context ? `Previous context to continue from: ${context.slice(-1000)}` : "Start the content from the beginning with a strong introduction."}
-Instruction: ${isLast ? "Conclude the narrative, ensure all points are covered, and end with a full sentence." : "Write this part in great detail and leave it ready to be continued. Do not summarize or end the whole story yet."}
-Return ONLY the content text. Be verbose and descriptive.`;
+
+${context ? `PREVIOUS CONTENT SUMMARY: ...${context.slice(-1500)}\n\nCONTINUATION TASK: Pick up exactly where the previous part left off. Maintain the same tone and depth.` : "STARTING TASK: Begin with a powerful and detailed introduction."}
+
+INSTRUCTION: ${isLast ? "Conclude the narrative naturally, ensuring a satisfying end. Finish with a full sentence." : "Continue the detailed exploration. DO NOT summarize. DO NOT end the story. Stop at a natural point so Part ${p+1} can continue seamlessly."}
+Return ONLY the content text. NO titles, NO Part labels, NO conversational filler.`;
 
           const data = await window.api.callApi({ bot, prompt });
           if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
