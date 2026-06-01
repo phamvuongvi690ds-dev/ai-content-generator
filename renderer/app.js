@@ -227,26 +227,56 @@ async function generateContent() {
   showResultTab(0);
 
   const bot = config.bots[Number(botIdx)];
-  const min = document.getElementById('minChars').value;
-  const max = document.getElementById('maxChars').value;
+  const min = Number(document.getElementById('minChars').value);
+  const max = Number(document.getElementById('maxChars').value);
   const requirements = document.getElementById('requirements').value.trim();
+
+  // Ngưỡng tối đa cho một lần call API (giả định 2500 ký tự để an toàn cho prompt/context)
+  const MAX_PER_CALL = 2500;
 
   for (let i = 0; i < titles.length; i++) {
     try {
-      const prompt = `Create high-quality, engaging content for title: ${titles[i]}. 
+      let finalContent = "";
+      const numParts = Math.ceil(max / MAX_PER_CALL);
+      
+      if (numParts > 1) {
+        // Xử lý chia nhỏ nếu yêu cầu quá dài (ví dụ 6000 ký tự)
+        const targetPartLen = Math.floor(max / numParts);
+        let context = "";
+        
+        for (let p = 1; p <= numParts; p++) {
+          const isLast = (p === numParts);
+          const currentMin = Math.floor(min / numParts);
+          const currentMax = isLast ? (max - (targetPartLen * (numParts - 1))) : targetPartLen;
+
+          const prompt = `This is part ${p}/${numParts} of a long content piece for the title: "${titles[i]}".
+Target length for this part: between ${currentMin} and ${currentMax} characters.
+Requirements: ${requirements || 'High quality content.'}.
+${context ? `Previous context to continue from: ${context.slice(-500)}` : "Start the content from the beginning."}
+Instruction: ${isLast ? "Complete the narrative and end with a full sentence." : "Write this part and leave it ready to be continued in the next part. Do not end the whole story yet."}
+Return ONLY the content text for this part. No headers, no conversational filler.`;
+
+          const data = await window.api.callApi({ bot, prompt });
+          if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
+          
+          const partText = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          finalContent += partText + " ";
+          context += partText;
+        }
+      } else {
+        // Xử lý thông thường nếu độ dài ngắn
+        const prompt = `Create high-quality, engaging content for title: ${titles[i]}. 
 Target length: strictly between ${min} and ${max} characters. 
-Current preference: Aim for approximately ${Math.floor((Number(min)+Number(max))/2)} characters for a balanced flow.
 Additional requirements: ${requirements || 'Output in the language implied by the title or requirements.'}.
-Writing style: Ensure perfect grammar, natural flow, and a complete narrative. The content must end with a full sentence. Do not cut off mid-thought.
-Return ONLY the final content. No filler, no headers, no conversational text.`;
-      
-      const data = await window.api.callApi({ bot, prompt });
-      
-      if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
-      
-      const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi: Không nhận được phản hồi từ AI.';
-      const normalized = normalizeToRange(text, min, max);
-      
+Writing style: Ensure perfect grammar, natural flow, and a complete narrative. The content must end with a full sentence.
+Return ONLY the final content. No filler, no headers.`;
+        
+        const data = await window.api.callApi({ bot, prompt });
+        if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
+        finalContent = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      }
+
+      const normalized = normalizeToRange(finalContent, min, max);
       generatedResultsByTitle[i].content = normalized;
       if (activeResultIndex === i) setOutput('outputTab2', normalized);
       showResultTab(activeResultIndex);
