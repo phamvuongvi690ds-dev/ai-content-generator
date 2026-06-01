@@ -231,8 +231,8 @@ async function generateContent() {
   const max = Number(document.getElementById('maxChars').value);
   const requirements = document.getElementById('requirements').value.trim();
 
-  // Ngưỡng tối đa cho một lần call API (giả định 2500 ký tự để an toàn cho prompt/context)
-  const MAX_PER_CALL = 2500;
+  // Ngưỡng tối đa cho một lần call API (tăng lên 4000 để tối ưu độ dài)
+  const MAX_PER_CALL = 4000;
 
   for (let i = 0; i < titles.length; i++) {
     try {
@@ -240,7 +240,6 @@ async function generateContent() {
       const numParts = Math.ceil(max / MAX_PER_CALL);
       
       if (numParts > 1) {
-        // Xử lý chia nhỏ nếu yêu cầu quá dài (ví dụ 6000 ký tự)
         const targetPartLen = Math.floor(max / numParts);
         let context = "";
         
@@ -249,12 +248,12 @@ async function generateContent() {
           const currentMin = Math.floor(min / numParts);
           const currentMax = isLast ? (max - (targetPartLen * (numParts - 1))) : targetPartLen;
 
-          const prompt = `This is part ${p}/${numParts} of a long content piece for the title: "${titles[i]}".
-Target length for this part: between ${currentMin} and ${currentMax} characters.
-Requirements: ${requirements || 'High quality content.'}.
-${context ? `Previous context to continue from: ${context.slice(-500)}` : "Start the content from the beginning."}
-Instruction: ${isLast ? "Complete the narrative and end with a full sentence." : "Write this part and leave it ready to be continued in the next part. Do not end the whole story yet."}
-Return ONLY the content text for this part. No headers, no conversational filler.`;
+          const prompt = `This is part ${p}/${numParts} of a very long, detailed content piece for the title: "${titles[i]}".
+CRITICAL REQUIREMENT: You MUST write at least ${currentMin} characters for this part. Aim for ${currentMax} characters.
+Requirements: ${requirements || 'High quality, extremely detailed content.'}.
+${context ? `Previous context to continue from: ${context.slice(-1000)}` : "Start the content from the beginning with a strong introduction."}
+Instruction: ${isLast ? "Conclude the narrative, ensure all points are covered, and end with a full sentence." : "Write this part in great detail and leave it ready to be continued. Do not summarize or end the whole story yet."}
+Return ONLY the content text. Be verbose and descriptive.`;
 
           const data = await window.api.callApi({ bot, prompt });
           if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
