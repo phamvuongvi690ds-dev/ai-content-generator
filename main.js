@@ -56,10 +56,10 @@ async function getVertexToken(keyPath) {
   return token.token;
 }
 
-ipcMain.handle('call-api', async (event, { bot, prompt }) => {
+async function callApiGeneric({ bot, prompt }) {
   const { apiType, baseUrl, apiKeys, keyIndex, serviceAccountPath, geminiBaseUrl, openaiBaseUrl, systemInstruction } = bot;
   const keys = apiKeys && apiKeys.length ? apiKeys : [''];
-  const models = fallbackModels(apiType, bot.model || 'gemini-2.5-flash');
+  const models = fallbackModels(apiType, bot.model || (apiType === 'openai' ? 'gpt-4o-mini' : 'gemini-2.5-flash'));
   let lastData = null;
 
   for (const model of models) {
@@ -113,6 +113,10 @@ ipcMain.handle('call-api', async (event, { bot, prompt }) => {
     }
   }
   return lastData || { error: 'All retries failed.' };
+}
+
+ipcMain.handle('call-api', async (event, { bot, prompt }) => {
+  return await callApiGeneric({ bot, prompt });
 });
 
 ipcMain.handle('select-file', async () => {

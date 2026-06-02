@@ -231,39 +231,41 @@ async function generateContent() {
   const max = Number(document.getElementById('maxChars').value);
   const requirements = document.getElementById('requirements').value.trim();
 
-  // Ngưỡng an toàn cho mỗi lần gọi API (khoảng 2500 ký tự để tránh bị cắt giữa chừng)
-  const MAX_PER_CALL = 2500;
+  // Ngưỡng an toàn cho mỗi lần gọi API (khoảng 2200 ký tự để dành chỗ cho ngữ cảnh)
+  const MAX_PER_CALL = 2200;
 
   for (let i = 0; i < titles.length; i++) {
     try {
       let finalContent = "";
+      
+      // Tính toán số phần dựa trên MAX_PER_CALL để đạt ngưỡng 6500-7000 ký tự
       const numParts = Math.ceil(max / MAX_PER_CALL);
       
       if (numParts > 1) {
-        const targetPartLen = Math.floor(max / numParts);
         let context = "";
         
         for (let p = 1; p <= numParts; p++) {
           const isLast = (p === numParts);
-          // Chia đều khoảng Min/Max cho từng phần
-          const currentMin = Math.floor(min / numParts);
-          const currentMax = isLast ? (max - (targetPartLen * (numParts - 1))) : targetPartLen;
+          
+          // Phân bổ ký tự sao cho tổng đạt sát ngưỡng max (6500-7000)
+          const currentMax = Math.min(MAX_PER_CALL, max - finalContent.length);
+          const currentMin = Math.floor(currentMax * 0.9); // Ép AI viết ít nhất 90% giới hạn phần này
 
           const prompt = `This is PART ${p} of ${numParts} for the content titled: "${titles[i]}".
-GOAL: You are writing a very long, comprehensive piece. Each part must be substantial.
-STRICT REQUIREMENT: Write exactly between ${currentMin} and ${currentMax} characters for THIS PART ONLY.
+GOAL: Write an extremely detailed and comprehensive long-form piece. 
+STRICT REQUIREMENT: You MUST write at least ${currentMin} characters for THIS PART. Target: ${currentMax} characters.
 Requirements: ${requirements || 'High quality, extremely detailed content.'}.
 
-${context ? `PREVIOUS CONTENT SUMMARY: ...${context.slice(-1500)}\n\nCONTINUATION TASK: Pick up exactly where the previous part left off. Maintain the same tone and depth.` : "STARTING TASK: Begin with a powerful and detailed introduction."}
+${context ? `PREVIOUS CONTENT CONTEXT (Do not repeat this, just continue): ...${context.slice(-2000)}\n\nCONTINUATION TASK: Pick up exactly where Part ${p-1} left off. Focus on expanding the next logical chapter/section with deep detail.` : "STARTING TASK: Begin with a powerful, extensive introduction and the first major section."}
 
-INSTRUCTION: ${isLast ? "Conclude the narrative naturally, ensuring a satisfying end. Finish with a full sentence." : "Continue the detailed exploration. DO NOT summarize. DO NOT end the story. Stop at a natural point so Part ${p+1} can continue seamlessly."}
-Return ONLY the content text. NO titles, NO Part labels, NO conversational filler.`;
+INSTRUCTION: ${isLast ? "Bring the extensive narrative to a full and satisfying conclusion. Ensure all loose ends are tied. End with a complete sentence." : "Continue the exhaustive detail. Do not summarize. Do not skip time. Stop exactly at a point that Part ${p+1} can continue seamlessly."}
+Return ONLY the content text. NO titles, NO labels, NO filler.`;
 
           const data = await window.api.callApi({ bot, prompt });
           if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
           
           const partText = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          finalContent += partText + " ";
+          finalContent += (finalContent ? "\n" : "") + partText.trim();
           context += partText;
         }
       } else {
