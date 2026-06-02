@@ -231,15 +231,15 @@ async function generateContent() {
   const max = Number(document.getElementById('maxChars').value);
   const requirements = document.getElementById('requirements').value.trim();
 
-  // Ngưỡng an toàn cho mỗi lần gọi API (khoảng 2200 ký tự để dành chỗ cho ngữ cảnh)
-  const MAX_PER_CALL = 2200;
+  // Ngưỡng an toàn thấp hơn để ép AI phải gọi nhiều lần hơn, giúp tích tiểu thành đại
+  const MAX_PER_CALL = 1800;
 
   for (let i = 0; i < titles.length; i++) {
     try {
       let finalContent = "";
       
-      // Tính toán số phần dựa trên MAX_PER_CALL để đạt ngưỡng 6500-7000 ký tự
-      const numParts = Math.ceil(max / MAX_PER_CALL);
+      // Tăng số lượng phần lên để ép AI viết chi tiết hơn
+      const numParts = Math.max(Math.ceil(max / 1500), 2); 
       
       if (numParts > 1) {
         let context = "";
@@ -247,26 +247,32 @@ async function generateContent() {
         for (let p = 1; p <= numParts; p++) {
           const isLast = (p === numParts);
           
-          // Phân bổ ký tự sao cho tổng đạt sát ngưỡng max (6500-7000)
-          const currentMax = Math.min(MAX_PER_CALL, max - finalContent.length);
-          const currentMin = Math.floor(currentMax * 0.9); // Ép AI viết ít nhất 90% giới hạn phần này
+          // Tính toán giới hạn cho từng phần để tổng đạt ngưỡng 6500-7000
+          const remaining = max - finalContent.length;
+          const currentMax = isLast ? remaining : Math.min(MAX_PER_CALL, Math.ceil(remaining / (numParts - p + 1)) + 500);
+          const currentMin = Math.floor(currentMax * 0.85);
 
-          const prompt = `This is PART ${p} of ${numParts} for the content titled: "${titles[i]}".
-GOAL: Write an extremely detailed and comprehensive long-form piece. 
-STRICT REQUIREMENT: You MUST write at least ${currentMin} characters for THIS PART. Target: ${currentMax} characters.
+          const prompt = `This is PART ${p} of ${numParts} for an EXTREMELY LONG and DETAILED content titled: "${titles[i]}".
+MISSION CRITICAL: You are a "wordy" writer. You MUST describe every detail, every emotion, and every scene with extreme verbosity. 
+STRICT REQUIREMENT: Write between ${currentMin} and ${currentMax} characters for THIS PART. Do not be concise.
 Requirements: ${requirements || 'High quality, extremely detailed content.'}.
 
-${context ? `PREVIOUS CONTENT CONTEXT (Do not repeat this, just continue): ...${context.slice(-2000)}\n\nCONTINUATION TASK: Pick up exactly where Part ${p-1} left off. Focus on expanding the next logical chapter/section with deep detail.` : "STARTING TASK: Begin with a powerful, extensive introduction and the first major section."}
+${context ? `PREVIOUS CONTENT CONTEXT (Do not repeat, continue the story): ...${context.slice(-2500)}\n\nCONTINUATION TASK: Pick up exactly where Part ${p-1} left off. Expand the NEXT specific chapter/detail. Do not skip any time or details.` : "STARTING TASK: Begin with a very long, immersive introduction and the first deep chapter."}
 
-INSTRUCTION: ${isLast ? "Bring the extensive narrative to a full and satisfying conclusion. Ensure all loose ends are tied. End with a complete sentence." : "Continue the exhaustive detail. Do not summarize. Do not skip time. Stop exactly at a point that Part ${p+1} can continue seamlessly."}
-Return ONLY the content text. NO titles, NO labels, NO filler.`;
+INSTRUCTION: ${isLast ? "Complete the exhaustive narrative. Ensure the total content feels like a massive, complete work. End with a full sentence." : "Write this part in overwhelming detail. Stop at a natural transition point. Part ${p+1} will continue immediately after your last word."}
+Return ONLY the content text. NO titles, NO labels, NO conversational filler.`;
 
           const data = await window.api.callApi({ bot, prompt });
           if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
           
-          const partText = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          finalContent += (finalContent ? "\n" : "") + partText.trim();
+          const partText = (data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+          finalContent += (finalContent ? "\n\n" : "") + partText;
           context += partText;
+          
+          // Nếu đã đạt ngưỡng max sớm thì có thể dừng (nhưng thường AI sẽ viết ngắn hơn)
+          if (finalContent.length >= max && !isLast) {
+             // Continue to next part anyway to ensure "Last Part" logic runs or just break if really over
+          }
         }
       } else {
         // Xử lý thông thường nếu độ dài ngắn
