@@ -157,8 +157,15 @@ function renderBots() {
 function setOutput(id, text) {
   const el = document.getElementById(id);
   if (!el) return;
-  // Bỏ các dấu cách xuống dòng thừa, giữ văn bản liền mạch
-  const cleanText = (text || '').replace(/\n\s*\n/g, '\n').trim();
+  // Xử lý để tất cả các dòng văn bản dính liền nhau thành một đoạn duy nhất
+  const cleanText = (text || '')
+    .split(/\r?\n/)               // Chia nhỏ theo dòng
+    .map(line => line.trim())     // Xóa khoảng trắng đầu cuối từng dòng
+    .filter(Boolean)              // Bỏ dòng trống
+    .join(' ')                    // Nối lại bằng 1 khoảng trắng duy nhất
+    .replace(/\s+/g, ' ')         // Thu gọn nhiều khoảng trắng thành 1
+    .trim();
+
   el.textContent = cleanText;
   const counter = document.getElementById(id === 'outputTab2' ? 'counterTab2' : 'counterTab3');
   if (counter) counter.textContent = `${cleanText.length.toLocaleString('vi-VN')} ký tự`;
