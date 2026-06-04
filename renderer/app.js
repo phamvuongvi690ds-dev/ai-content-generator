@@ -319,8 +319,11 @@ async function copyOutput(id) {
   alert('Đã copy!');
 }
 
-async function downloadOutput(id, filename) {
-  const text = document.getElementById(id).textContent;
+async function downloadOutput(id, filename, headerTitle = '') {
+  let text = document.getElementById(id).textContent;
+  if (headerTitle) {
+    text = headerTitle + "\n\n" + text;
+  }
   // Làm sạch tên file: bỏ ký tự đặc biệt
   const safeName = (filename || 'content.txt').replace(/[/\\?%*:|"<>]/g, '-');
   await window.api.saveTextFile({ filename: safeName, text });
@@ -330,7 +333,7 @@ async function downloadOutput(id, filename) {
 function downloadActiveResult() {
   const item = generatedResultsByTitle[activeResultIndex];
   if (!item) return;
-  downloadOutput('outputTab2', item.title + '.txt');
+  downloadOutput('outputTab2', item.title + '.txt', item.title);
 }
 
 async function regenerateActiveTitle() {
