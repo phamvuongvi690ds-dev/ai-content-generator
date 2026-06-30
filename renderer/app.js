@@ -154,17 +154,27 @@ function renderBots() {
   });
 }
 
+function cleanPromptText(text) {
+  return (text || '')
+    .replace(/```[\s\S]*?```/g, m => m.replace(/```/g, '')) // bỏ markdown code fence
+    .replace(/\[[^\]\r\n]{0,160}\]/g, '')                 // bỏ chú thích kiểu [ ... ]
+    .replace(/(^|[.!?]\s+)\([^()\r\n]{0,120}\)\s*/g, '$1') // bỏ chú thích ngắn kiểu ( ... ) ở đầu câu
+    .replace(/^[\s>*#\-–—•·]+/gm, '')                      // bỏ bullet/heading/ký tự trang trí đầu dòng
+    .replace(/[\[\]{}<>*_`~|^=]+/g, '')                    // bỏ ký tự đặc biệt hay lọt vào prompt
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function setOutput(id, text) {
   const el = document.getElementById(id);
   if (!el) return;
-  // Xử lý để tất cả các dòng văn bản dính liền nhau thành một đoạn duy nhất
-  const cleanText = (text || '')
-    .split(/\r?\n/)               // Chia nhỏ theo dòng
-    .map(line => line.trim())     // Xóa khoảng trắng đầu cuối từng dòng
-    .filter(Boolean)              // Bỏ dòng trống
-    .join(' ')                    // Nối lại bằng 1 khoảng trắng duy nhất
-    .replace(/\s+/g, ' ')         // Thu gọn nhiều khoảng trắng thành 1
-    .trim();
+  const cleanText = cleanPromptText(text);
 
   el.textContent = cleanText;
   const counter = document.getElementById(id === 'outputTab2' ? 'counterTab2' : 'counterTab3');
@@ -294,7 +304,7 @@ Return ONLY the final content. No filler, no headers.`;
         finalContent = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
       }
 
-      const normalized = normalizeToRange(finalContent, min, max);
+      const normalized = cleanPromptText(normalizeToRange(finalContent, min, max));
       generatedResultsByTitle[i].content = normalized;
       if (activeResultIndex === i) setOutput('outputTab2', normalized);
       showResultTab(activeResultIndex);
@@ -314,18 +324,15 @@ Return ONLY the final content. No filler, no headers.`;
 }
 
 async function copyOutput(id) {
-  const text = document.getElementById(id).textContent;
+  const text = cleanPromptText(document.getElementById(id).textContent);
   await navigator.clipboard.writeText(text);
   alert('Đã copy!');
 }
 
-async function downloadOutput(id, filename, headerTitle = '') {
-  let text = document.getElementById(id).textContent;
-  if (headerTitle) {
-    text = headerTitle + "\n\n" + text;
-  }
-  // Làm sạch tên file: bỏ ký tự đặc biệt
-  const safeName = (filename || 'content.txt').replace(/[/\\?%*:|"<>]/g, '-');
+async function downloadOutput(id, filename) {
+  const text = cleanPromptText(document.getElementById(id).textContent);
+  // Làm sạch tên file: bỏ ký tự đặc biệt. Nội dung file không kèm tiêu đề.
+  const safeName = (filename || 'content.txt').replace(/[/\\?%*:|"<>\[\]{}]/g, '-');
   await window.api.saveTextFile({ filename: safeName, text });
   alert('Đã lưu file!');
 }
@@ -333,7 +340,7 @@ async function downloadOutput(id, filename, headerTitle = '') {
 function downloadActiveResult() {
   const item = generatedResultsByTitle[activeResultIndex];
   if (!item) return;
-  downloadOutput('outputTab2', item.title + '.txt', item.title);
+  downloadOutput('outputTab2', item.title + '.txt');
 }
 
 async function regenerateActiveTitle() {
@@ -365,7 +372,7 @@ Return ONLY the final content. No filler, no headers, no conversational text.`;
     if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
     
     const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi.';
-    const normalized = normalizeToRange(text, min, max);
+    const normalized = cleanPromptText(normalizeToRange(text, min, max));
     item.content = normalized;
     setOutput('outputTab2', normalized);
   } catch (err) {
@@ -388,5 +395,5 @@ Original content:
 ${original}`;
   const data = await window.api.callApi({ bot, prompt });
   const text = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Lỗi.';
-  setOutput('outputTab3', text);
+  setOutput('outputTab3', cleanPromptText(text));
 }

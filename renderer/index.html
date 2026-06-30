@@ -166,13 +166,13 @@
         </div>
         <div class="results-main">
           <div id="tab2OutputWrap" style="display:none">
-            <div class="char-counter" id="counterTab2">0 ký tự</div>
-            <div id="outputTab2" class="output-box"></div>
-            <div style="margin-top:15px; display:flex; gap:10px;">
-              <button class="btn-primary" onclick="regenerateActiveTitle()">🔄 Tạo lại tiêu đề này</button>
-              <button class="secondary" onclick="copyOutput('outputTab2')">📋 Copy</button>
+            <div style="margin-bottom:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <button class="secondary" onclick="copyOutput('outputTab2')">📋 Copy prompt</button>
               <button class="secondary" onclick="downloadActiveResult()">💾 Tải .txt</button>
+              <button class="btn-primary" onclick="regenerateActiveTitle()">🔄 Tạo lại tiêu đề này</button>
+              <div class="char-counter" id="counterTab2" style="margin-bottom:0; margin-left:auto;">0 ký tự</div>
             </div>
+            <div id="outputTab2" class="output-box"></div>
           </div>
         </div>
       </div>
