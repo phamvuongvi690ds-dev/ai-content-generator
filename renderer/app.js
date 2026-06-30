@@ -156,11 +156,12 @@ function renderBots() {
 
 function cleanPromptText(text) {
   return (text || '')
-    .replace(/```[\s\S]*?```/g, m => m.replace(/```/g, '')) // bỏ markdown code fence
-    .replace(/\[[^\]\r\n]{0,160}\]/g, '')                 // bỏ chú thích kiểu [ ... ]
-    .replace(/(^|[.!?]\s+)\([^()\r\n]{0,120}\)\s*/g, '$1') // bỏ chú thích ngắn kiểu ( ... ) ở đầu câu
-    .replace(/^[\s>*#\-–—•·]+/gm, '')                      // bỏ bullet/heading/ký tự trang trí đầu dòng
-    .replace(/[\[\]{}<>*_`~|^=]+/g, '')                    // bỏ ký tự đặc biệt hay lọt vào prompt
+    .replace(/```[\s\S]*?```/g, m => m.replace(/```/g, ''))
+    .replace(/\[[\s\S]*?\]/g, '')                         // bỏ toàn bộ giải thích/chú thích trong [ ... ]
+    .replace(/^\s*(note|notes|explanation|comment|caption|title|prompt|scene|camera|style|negative prompt|ghi chú|giải thích|chú thích|tiêu đề|cảnh|phong cách)\s*[:：\-–—].*$/gim, '')
+    .replace(/(^|[.!?]\s+)\([^()\r\n]{0,140}\)\s*/g, '$1') // bỏ chú thích ngắn kiểu ( ... ) ở đầu câu
+    .replace(/^[\s>*#\-–—•·]+/gm, '')
+    .replace(/[\[\]{}<>*_`~|^=\\]+/g, '')                 // bỏ ký tự đặc biệt khỏi kết quả
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
     .split(/\r?\n/)
@@ -168,6 +169,7 @@ function cleanPromptText(text) {
     .filter(Boolean)
     .join(' ')
     .replace(/\s+/g, ' ')
+    .replace(/\s+([,.!?;:])/g, '$1')
     .trim();
 }
 
@@ -277,7 +279,7 @@ Requirements: ${requirements || 'High quality, extremely detailed content.'}.
 ${context ? `PREVIOUS CONTENT CONTEXT (Do not repeat, continue the story): ...${context.slice(-2500)}\n\nCONTINUATION TASK: Pick up exactly where Part ${p-1} left off. Expand the NEXT specific chapter/detail. Do not skip any time or details.` : "STARTING TASK: Begin with a very long, immersive introduction and the first deep chapter."}
 
 INSTRUCTION: ${isLast ? "Complete the exhaustive narrative. Ensure the total content feels like a massive, complete work. End with a full sentence." : "Write this part in overwhelming detail. Stop at a natural transition point. Part ${p+1} will continue immediately after your last word."}
-Return ONLY the content text. NO titles, NO labels, NO conversational filler.`;
+Return ONLY the content text. NO titles, NO labels, NO explanations, NO notes, NO bracketed text like [ ... ], NO special formatting characters.`;
 
           const data = await window.api.callApi({ bot, prompt });
           if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
@@ -297,7 +299,7 @@ Return ONLY the content text. NO titles, NO labels, NO conversational filler.`;
 Target length: strictly between ${min} and ${max} characters. 
 Additional requirements: ${requirements || 'Output in the language implied by the title or requirements.'}.
 Writing style: Ensure perfect grammar, natural flow, and a complete narrative. The content must end with a full sentence.
-Return ONLY the final content. No filler, no headers.`;
+Return ONLY the final content. No filler, no headers, no explanations, no notes, no bracketed text like [ ... ], no special formatting characters.`;
         
         const data = await window.api.callApi({ bot, prompt });
         if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
@@ -366,7 +368,7 @@ Target length: strictly between ${min} and ${max} characters.
 Current preference: Aim for approximately ${Math.floor((Number(min)+Number(max))/2)} characters for a balanced flow.
 Additional requirements: ${requirements || 'Output in the language implied by the title or requirements.'}.
 Writing style: Ensure perfect grammar, natural flow, and a complete narrative. The content must end with a full sentence. Do not cut off mid-thought.
-Return ONLY the final content. No filler, no headers, no conversational text.`;
+Return ONLY the final content. No filler, no headers, no conversational text, no explanations, no notes, no bracketed text like [ ... ], no special formatting characters.`;
 
     const data = await window.api.callApi({ bot, prompt });
     if (data.error) throw new Error(JSON.stringify(data.error, null, 2));
